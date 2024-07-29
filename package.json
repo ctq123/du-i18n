@@ -4,7 +4,7 @@
 	"description": "vscode国际化多语言解决方案",
 	"author": "程天庆",
 	"publisher": "DewuTeam",
-	"version": "1.3.22",
+	"version": "1.3.23",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
