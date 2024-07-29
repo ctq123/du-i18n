@@ -1,0 +1,13 @@
+
+*{{#if scope}} **{{scope}}:**
+
+{{~/if}} {{#if subject}}
+  {{~subject}}
+{{~else}}
+  {{~header}}
+{{~/if}}
+{{~!-- commit link --}} {{#if @root.linkReferences~}}
+  {{[committerDate]}}
+{{~else}}
+  {{~shortHash}}
+{{~/if}}

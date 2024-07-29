@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "es6",
+    // "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "target": "ES5",
+    "jsx": "react",
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "lib": ["dom", "ES2015"],
+    "strict": false,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+  }
+}
