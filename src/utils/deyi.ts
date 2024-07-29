@@ -91,9 +91,8 @@ export class DEYI {
               bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys, 
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
-              isOnlineTrans, baiduAppid, baiduSecrectKey, projectRootPath
+              isOnlineTrans, baiduAppid, baiduSecrectKey
             } = config || {};
-            DEYI.projectRootPath = projectRootPath || DEYI.projectRootPath;
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
             this.onlineApiUrl = onlineApiUrl || this.onlineApiUrl;
