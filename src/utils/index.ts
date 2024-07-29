@@ -2,18 +2,13 @@ import * as vscode from 'vscode';
 import MapCache from './cache';
 import * as Baidu from './baidu';
 import { resolve } from 'path';
+import { DEYI } from './deyi';
 const path = require('path');
 const fs = require('fs');
 const YAML = require('yaml');
 const merge = require('lodash/merge');
 const isEmpty = require('lodash/isEmpty');
 const isObject = require('lodash/isObject');
-// TODO prettier是在是太大了，承受不起呀
-// const prettier = require("prettier");
-// const prettier = require("prettier/standalone");
-// const parserBabel = require("prettier/parser-babel");
-// const parserTypescript = require("prettier/parser-typescript");
-// const parserYaml = require("prettier/parser-yaml");
 
 // 频繁调用，缓存计算结果
 const RegCache = new MapCache();
@@ -21,9 +16,7 @@ const chineseCharReg = /[\u4e00-\u9fa5]/;
 const chineseChar2Reg = /[\u4e00-\u9fa5]+|[\u4e00-\u9fa5]/g;
 const varReg = /\$\{(.[^\}]+)?\}/g; // 判断包含${}的正则
 let decorationType = null;
-// const domReg = /<\/([a-zA-Z1-6]+)(\s*[^>]*)?>/;
-// const chineseQuoteReg = /"[\s\S]*[\u4e00-\u9fa5][\s\S]*"|'[\s\S]*[\u4e00-\u9fa5][\s\S]*'|`[\s\S]*[\u4e00-\u9fa5][\s\S]*`/g
-
+const globalPkgPath = '**/package.json';
 
 /**
  * 获取复制对象的value
@@ -384,7 +377,8 @@ export async function handleAnalystics(selectFolderPath: any, bigFileLineCount: 
 
 export async function getProjectInfo() {
   const projectInfoList = [];
-  const pkgPath = '**/package.json';
+  const projectFolder = DEYI.projectRootPath;
+  const pkgPath = projectFolder ? `**/${projectFolder}/package.json` : globalPkgPath;
   const files = await getFiles(pkgPath);
   files.forEach(({ fsPath }) => {
     try {
@@ -403,9 +397,10 @@ export async function getProjectInfo() {
   return projectInfoList;
 }
 
-export async function getBasePath(projectFolder: string = '') {
+export async function getBasePath() {
+  let projectFolder = DEYI.projectRootPath;
   let basePath = '';
-  let pkgPath = projectFolder ? `**/${projectFolder}/package.json` : '**/package.json';
+  let pkgPath = projectFolder ? `**/${projectFolder}/package.json` : globalPkgPath;
   const files = await getFiles(pkgPath);
   files.forEach(({ fsPath }) => {
     let item = path.dirname(fsPath);

@@ -441,19 +441,19 @@ export async function activate(context: vscode.ExtensionContext) {
 		// discard: 对接多语言平台api已废弃，先去掉耗性能
 		// // 多语言平台
 		// onlineInit(context);
+		const deyi = new DEYI();
+		// console.log("deyi", deyi);
 
 		const proInfo = getProjectInfo();
 		const projectInfo = JSON.stringify(proInfo);
 
-		const deyi = new DEYI();
-		// console.log("deyi", deyi);
 		// 初始化
 		deyi.init(context, () => {
 			// 渲染语言
 			renderDecoration(deyi);
 			console.log("deyi init complete");
 			try {
-				// 记录用户行为数据
+				// 记录用户行为数据，只会读取package.json文件信息中的（项目名称、版本、项目描述），其余内容不会读取
 				reporter.sendTelemetryEvent("du_i18n_deyi_init", {
 					action: "初始化",
 					projectInfo,

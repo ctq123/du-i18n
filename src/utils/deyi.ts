@@ -41,7 +41,11 @@ export class DEYI {
   private baiduSecrectKey: string;
   private fileReg: any;
   private jsonReg: any;
+
+  static projectRootPath: string = ''; // 项目根目录，默认使用与**/package.json平级的文件夹作为根目录，当存在多个package.json时要设置根目录
+
   constructor(props: any = {}) {
+    DEYI.projectRootPath = '';// 项目根目录，默认使用与**/package.json平级的文件夹作为根目录
     this.configFilePath = `/du-i18n.config.json`;// du-i18n配置文件
     this.projectName = '';// deyi项目名称
     this.projectShortName = '';// deyi项目简称
@@ -67,6 +71,7 @@ export class DEYI {
     this.uncheckMissKeys = [];// 跳过翻译漏检机制的key，打标已翻译
     this.isNeedRandSuffix = true;// tempPaths下的文件是否生成文件名后缀
     this.isSingleQuote = true;// key的引用是单引号还是双引号，默认是单引号
+    
     this.isOnlineTrans = true;// 本地-是否支持在线翻译
     this.baiduAppid = '';// 百度翻译appid
     this.baiduSecrectKey = '';// 百度翻译密钥
@@ -84,7 +89,14 @@ export class DEYI {
           if (data) {
             const config = eval(`(${data})`);
             // console.log("config", config);
-            const { projectName, projectShortName, onlineApiUrl, version, multiFolders, bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys, transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, fileReg, isNeedRandSuffix, langPaths, isSingleQuote, isOnlineTrans, baiduAppid, baiduSecrectKey } = config || {};
+            const { 
+              projectName, projectShortName, onlineApiUrl, version, multiFolders, 
+              bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys, 
+              transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
+              fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
+              isOnlineTrans, baiduAppid, baiduSecrectKey, projectRootPath
+            } = config || {};
+            DEYI.projectRootPath = projectRootPath || DEYI.projectRootPath;
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
             this.onlineApiUrl = onlineApiUrl || this.onlineApiUrl;
@@ -117,6 +129,7 @@ export class DEYI {
 
   getInitConfig() {
     const initConfig = {
+      projectRootPath: DEYI.projectRootPath,
       quoteKeys: this.quoteKeys,
       defaultLang: this.defaultLang,
       tempLangs: this.tempLangs,
@@ -132,6 +145,10 @@ export class DEYI {
       baiduSecrectKey: this.baiduSecrectKey,
     };
     return initConfig;
+  }
+
+  getProjectRootPath() {
+    return DEYI.projectRootPath;
   }
 
   getConfigFilePath() {
@@ -158,6 +175,11 @@ export class DEYI {
     return this.localLangObj;
   }
 
+  /**
+   * 判断是否属于公司内部项目
+   * 与外部无关，请忽略
+   * @returns 
+   */
   isOnline() {
     return this.onlineApiUrl;
   }
@@ -235,7 +257,11 @@ export class DEYI {
   getIsSingleQuote() {
     return this.isSingleQuote;
   }
-
+  
+  /**
+   * 是否支持本地在线翻译，如百度翻译，默认支持
+   * @returns 
+   */
   getIsOnlineTrans() {
     return this.isOnlineTrans;
   }
