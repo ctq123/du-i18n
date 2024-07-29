@@ -628,7 +628,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						};
 						files.forEach((file, i) => {
 							const fileName = file.fsPath;
-							const prefixKey = deyi.getPrefixKey(fileName);
+							const prefixKey = deyi.getPrefixKey(fileName, i.toString());
 							const pageEnName = deyi.generatePageEnName(fileName);
 							const tempFileName = deyi.getTempFileName();
 							const isNeedRandSuffix = deyi.getIsNeedRandSuffix();

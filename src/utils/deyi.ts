@@ -578,20 +578,21 @@ export class DEYI {
     return '';
   }
 
-  getKeyPrefix(filePath: string) {
+  getKeyPrefix(filePath: string, index: string = '') {
     let dirName = path.dirname(filePath);
     dirName = dirName.split(path.sep).slice(-1)[0];
     let fileName = path.basename(filePath);
     fileName = fileName.split('.')[0];
     let key = `${dirName}.${fileName}`;
-    const rand = Date.now().toString().substr(-6);
-    return `${key}.${rand}-`;
+    const rand = Date.now().toString().substr(-5);
+    const rand2 = index || Math.floor(Math.random() * 10);
+    return `${key}.${rand}${rand2}-`;
   }
 
-  getPrefixKey(fsPath: string) {
+  getPrefixKey(fsPath: string, index: string = '') {
     const pageEnName = this.generatePageEnName(fsPath);
     const basePrefix = this.getBasePrefix(pageEnName);
-    const secondPrefix = this.getKeyPrefix(fsPath);
+    const secondPrefix = this.getKeyPrefix(fsPath, index);
     const key = `${basePrefix}${secondPrefix}`;
     return key;
   }
