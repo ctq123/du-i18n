@@ -42,10 +42,7 @@ export class DEYI {
   private fileReg: any;
   private jsonReg: any;
 
-  static projectRootPath: string = ''; // 项目根目录，默认使用与**/package.json平级的文件夹作为根目录，当存在多个package.json时要设置根目录
-
   constructor(props: any = {}) {
-    DEYI.projectRootPath = '';// 项目根目录，默认使用与**/package.json平级的文件夹作为根目录
     this.configFilePath = `/du-i18n.config.json`;// du-i18n配置文件
     this.projectName = '';// deyi项目名称
     this.projectShortName = '';// deyi项目简称
@@ -129,7 +126,6 @@ export class DEYI {
 
   getInitConfig() {
     const initConfig = {
-      projectRootPath: DEYI.projectRootPath,
       quoteKeys: this.quoteKeys,
       defaultLang: this.defaultLang,
       tempLangs: this.tempLangs,
@@ -145,10 +141,6 @@ export class DEYI {
       baiduSecrectKey: this.baiduSecrectKey,
     };
     return initConfig;
-  }
-
-  getProjectRootPath() {
-    return DEYI.projectRootPath;
   }
 
   getConfigFilePath() {

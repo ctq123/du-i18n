@@ -377,42 +377,42 @@ export async function handleAnalystics(selectFolderPath: any, bigFileLineCount: 
 
 export async function getProjectInfo() {
   const projectInfoList = [];
-  const projectFolder = DEYI.projectRootPath;
-  const pkgPath = projectFolder ? `**/${projectFolder}/package.json` : globalPkgPath;
-  const files = await getFiles(pkgPath);
-  files.forEach(({ fsPath }) => {
-    try {
-      const data = fs.readFileSync(fsPath, 'utf-8');
-      if (data) {
-        const pkObj = eval(`(${data})`);
-        if (!isEmpty(pkObj)) {
-          const { name, description, version } = pkObj || {};
-          projectInfoList.push({name, description, version});
-        }
+  try {
+    const basePath = getBasePath();
+    const fsPath = path.join(basePath, 'package.json');
+    const data = fs.readFileSync(fsPath, 'utf-8');
+    if (data) {
+      const pkObj = eval(`(${data})`);
+      if (!isEmpty(pkObj)) {
+        const { name, description, version } = pkObj || {};
+        projectInfoList.push({name, description, version});
       }
-    } catch(e) {
-      console.error(e);
     }
-  });
+  } catch(e) {
+    console.error(e);
+  }
   return projectInfoList;
 }
 
+/**
+ * 读取所有包含package.json目录，取路径最短的那一个作为根目录
+ * @returns 
+ */
 export async function getBasePath() {
-  let projectFolder = DEYI.projectRootPath;
   let basePath = '';
-  let pkgPath = projectFolder ? `**/${projectFolder}/package.json` : globalPkgPath;
+  let pkgPath = globalPkgPath;
   const files = await getFiles(pkgPath);
   files.forEach(({ fsPath }) => {
     let item = path.dirname(fsPath);
     if (!basePath) {
       basePath = item;
     } else {
-      if (item.length < basePath) {
+      if (item.length < basePath.length) {
         basePath = item;
       }
     }
   });
-  console.log('basePath', basePath);
+  // console.log('basePath', basePath);
   return basePath;
 }
 
