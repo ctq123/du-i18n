@@ -24,7 +24,7 @@ export class DEYI {
   private localLangFilePath: string;
   private localLangObj: any;
   private onlineLangObj: any;
-  private isOverWriteLocal: any;
+  private isOverWriteLocal: boolean;
   private multiFolders: string[];
   private bigFileLineCount: number;
   private defaultLang: string;
@@ -32,6 +32,7 @@ export class DEYI {
   private tempLangs: string[];
   private quoteKeys: string[];
   private uncheckMissKeys: string[];
+  private prefixKey: string | null;
   private missCheckResultPath: string;
   private languageMissOnlinePath: string;
   private isNeedRandSuffix: boolean;
@@ -68,6 +69,7 @@ export class DEYI {
     this.uncheckMissKeys = [];// 跳过翻译漏检机制的key，打标已翻译
     this.isNeedRandSuffix = true;// tempPaths下的文件是否生成文件名后缀
     this.isSingleQuote = true;// key的引用是单引号还是双引号，默认是单引号
+    this.prefixKey = null;// key前缀
     
     this.isOnlineTrans = true;// 本地-是否支持在线翻译
     this.baiduAppid = '';// 百度翻译appid
@@ -91,7 +93,7 @@ export class DEYI {
               bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys, 
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
-              isOnlineTrans, baiduAppid, baiduSecrectKey
+              isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey
             } = config || {};
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
@@ -115,6 +117,7 @@ export class DEYI {
             this.isOnlineTrans = typeof isOnlineTrans === 'boolean' ? isOnlineTrans : this.isOnlineTrans;
             this.baiduAppid = baiduAppid || this.baiduAppid;
             this.baiduSecrectKey = baiduSecrectKey || this.baiduSecrectKey;
+            this.prefixKey = typeof prefixKey === 'string' ? prefixKey : this.prefixKey;
           }
         } catch(e) {
           console.error(e);
@@ -133,6 +136,7 @@ export class DEYI {
       tempPaths: this.tempPaths,
       tempFileName: this.tempFileName,
       multiFolders: this.multiFolders,
+      prefixKey: this.prefixKey,
       uncheckMissKeys: this.uncheckMissKeys,
       isSingleQuote: this.isSingleQuote,
       isOnlineTrans: this.isOnlineTrans,
@@ -583,7 +587,7 @@ export class DEYI {
     dirName = dirName.split(path.sep).slice(-1)[0];
     let fileName = path.basename(filePath);
     fileName = fileName.split('.')[0];
-    let key = `${dirName}.${fileName}`;
+    let key = typeof this.prefixKey === 'string' ? this.prefixKey : `${dirName}.${fileName}`;
     const rand = Date.now().toString().substr(-5);
     const rand2 = index || Math.floor(Math.random() * 10);
     return `${key}.${rand}${rand2}-`;
