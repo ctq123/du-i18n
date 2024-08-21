@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import TelemetryReporter from "vscode-extension-telemetry";
+// import TelemetryReporter from "vscode-extension-telemetry";
 import { 
 	getObjectValue, 
 	writeJsonFileSync, 
@@ -420,11 +420,11 @@ function triggerUpdateDecorations(activeEditor, positionObj, langObj) {
 export async function activate(context: vscode.ExtensionContext) {
 	try {
 		// 创建 TelemetryReporter 实例
-		const reporter = new TelemetryReporter(
-			"DewuTeam.du-i18n",
-			packageJson.version,
-			"G-ZXEWB1PNPW"
-		);
+		// const reporter = new TelemetryReporter(
+		// 	"DewuTeam.du-i18n",
+		// 	packageJson.version,
+		// 	"G-ZXEWB1PNPW"
+		// );
 		// const isValid = checkConfig();
 		// if (!isValid) {
 		// 	return;
@@ -452,13 +452,13 @@ export async function activate(context: vscode.ExtensionContext) {
 			// 渲染语言
 			renderDecoration(deyi);
 			console.log("deyi init complete");
-			try {
-				// 记录用户行为数据，只会读取package.json文件信息中的（项目名称、版本、项目描述），其余内容不会读取
-				reporter.sendTelemetryEvent("du_i18n_deyi_init", {
-					action: "初始化",
-					projectInfo,
-				});
-			} catch(e) {}
+			// try {
+			// 	// 记录用户行为数据，只会读取package.json文件信息中的（项目名称、版本、项目描述），其余内容不会读取
+			// 	reporter.sendTelemetryEvent("du_i18n_deyi_init", {
+			// 		action: "初始化",
+			// 		projectInfo,
+			// 	});
+			// } catch(e) {}
 		});
 
 		// // 监听配置的变化
@@ -531,11 +531,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			async function () {
 				// console.log("vscode 扫描中文")
 				try {
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
-						action: "扫描中文",
-						projectInfo,
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
+					// 	action: "扫描中文",
+					// 	projectInfo,
+					// });
 
 					const activeEditor = vscode.window.activeTextEditor;
 					if (activeEditor) {
@@ -560,18 +560,18 @@ export async function activate(context: vscode.ExtensionContext) {
 										deyi.handleSendToOnline(newLangObj, pageEnName, async () => {
 											handleRefresh();
 
-											// 记录用户行为数据
-											reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
-												action: "扫描中文-内部-成功",
-											});
+											// // 记录用户行为数据
+											// reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
+											// 	action: "扫描中文-内部-成功",
+											// });
 										});
 									} else {
 										handleRefresh();
 
-										// 记录用户行为数据
-										reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
-											action: "扫描中文-外部-成功",
-										});
+										// // 记录用户行为数据
+										// reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
+										// 	action: "扫描中文-外部-成功",
+										// });
 									}
 								});
 							}
@@ -579,12 +579,12 @@ export async function activate(context: vscode.ExtensionContext) {
 					}
 				} catch(e) {
 					console.error("scanAndGenerate e", e);
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
-						action: "扫描中文-异常",
-						projectInfo,
-						error: e
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_scanAndGenerate", {
+					// 	action: "扫描中文-异常",
+					// 	projectInfo,
+					// 	error: e
+					// });
 				}
 			})
 		);
@@ -594,11 +594,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			'extension.du.i18n.multiScanAndGenerate', 
 			async function () {
 				try {
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-						action: "批量扫描中文",
-						projectInfo,
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+					// 	action: "批量扫描中文",
+					// 	projectInfo,
+					// });
 					// console.log("vscode 批量扫描中文")
 					const selectFolder = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, });
 					// console.log("selectFolder", selectFolder);
@@ -641,20 +641,20 @@ export async function activate(context: vscode.ExtensionContext) {
 												if (i === files.length - 1) {
 													handleRefresh();
 
-													// 记录用户行为数据
-													reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-														action: "批量扫描中文-内部-成功",
-													});
+													// // 记录用户行为数据
+													// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+													// 	action: "批量扫描中文-内部-成功",
+													// });
 												}
 											});
 										} else {
 											if (i === files.length - 1) {// TODO: 这里其实用promise.all更好，但改造多层回调成本太大，暂且这样
 												handleRefresh();
 
-												// 记录用户行为数据
-												reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-													action: "批量扫描中文-外部-成功",
-												});
+												// // 记录用户行为数据
+												// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+												// 	action: "批量扫描中文-外部-成功",
+												// });
 											}
 										}
 									});
@@ -664,12 +664,12 @@ export async function activate(context: vscode.ExtensionContext) {
 					}
 				} catch(e) {
 					console.error("multiScanAndGenerate e", e);
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-						action: "批量扫描中文-异常",
-						projectInfo,
-						error: e
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+					// 	action: "批量扫描中文-异常",
+					// 	projectInfo,
+					// 	error: e
+					// });
 				}
 			})
 		);
@@ -679,11 +679,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			'extension.du.i18n.translateFromChineseKey', 
 			async function () {
 				try {
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-						action: "在线翻译",
-						projectInfo,
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+					// 	action: "在线翻译",
+					// 	projectInfo,
+					// });
 
 					// console.log("vscode 中文转译")
 					const langKey = userKey || deyi.getDefaultLang();
@@ -695,10 +695,10 @@ export async function activate(context: vscode.ExtensionContext) {
 						if (!deyi.isOnline()) {
 							await deyi.refreshGlobalLangObj();
 						}
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-							action: "在线翻译-成功",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+						// 	action: "在线翻译-成功",
+						// });
 					};
 					if (deyi.isOnline() || deyi.getIsOnlineTrans() === false) {// 在线
 						const transSourceObj = deyi.getTransSourceObj();
@@ -710,10 +710,10 @@ export async function activate(context: vscode.ExtensionContext) {
 						} else {
 							handleTranslate(transSourceObj);
 						}
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-							action: "在线翻译-内部",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+						// 	action: "在线翻译-内部",
+						// });
 					} else {// 调用百度翻译
 						const activeEditor = vscode.window.activeTextEditor;
 						if (activeEditor) {
@@ -725,7 +725,7 @@ export async function activate(context: vscode.ExtensionContext) {
 								const baiduAppid = deyi.getBaiduAppid();
 								const baiduSecrectKey = deyi.getBaiduSecrectKey();
 								// 调用百度翻译
-								const transSourceObj = await getTransSourceObjByBaidu(fileName, langKey, baiduAppid, baiduSecrectKey, reporter);
+								const transSourceObj = await getTransSourceObjByBaidu(fileName, langKey, baiduAppid, baiduSecrectKey);
 								// console.log('transSourceObj', transSourceObj);
 								if (!isEmpty(transSourceObj)) {
 									handleTranslate(transSourceObj, fileName);
@@ -733,21 +733,21 @@ export async function activate(context: vscode.ExtensionContext) {
 							} else {
 								vscode.window.showWarningMessage(`请到目录${tempPaths}的翻译文件中调用该命令`);
 								
-								// 记录用户行为数据
-								reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-									action: "在线翻译-外部",
-									error: `请到目录${tempPaths}的翻译文件中调用该命令`
-								});
+								// // 记录用户行为数据
+								// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+								// 	action: "在线翻译-外部",
+								// 	error: `请到目录${tempPaths}的翻译文件中调用该命令`
+								// });
 							}
 						}
 					}
 				} catch(e) {
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-						action: "在线翻译-异常",
-						projectInfo,
-						error: e,
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+					// 	action: "在线翻译-异常",
+					// 	projectInfo,
+					// 	error: e,
+					// });
 				}
 			})
 		);
@@ -786,19 +786,19 @@ export async function activate(context: vscode.ExtensionContext) {
 						if (isInit) {
 							deyi.init(context, () => {});
 							console.log("deyi2", deyi);
-							// 记录用户行为数据
-							reporter.sendTelemetryEvent("du_i18n_deyi_init", {
-								action: "初始化-设置回调",
-								projectInfo,
-							});
+							// // 记录用户行为数据
+							// reporter.sendTelemetryEvent("du_i18n_deyi_init", {
+							// 	action: "初始化-设置回调",
+							// 	projectInfo,
+							// });
 						}
 					});
 				}
 
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_setting", {
-					action: "设置",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_setting", {
+				// 	action: "设置",
+				// });
 			})
 		);
 
@@ -822,10 +822,10 @@ export async function activate(context: vscode.ExtensionContext) {
 						renderDecoration(deyi);
 					}
 				}
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_change", {
-					action: "切换语言",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_change", {
+				// 	action: "切换语言",
+				// });
 			})
 		);
 
@@ -879,10 +879,10 @@ export async function activate(context: vscode.ExtensionContext) {
 							});
 					}
 				}
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_receive", {
-					action: "自定义命令",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_receive", {
+				// 	action: "自定义命令",
+				// });
 			})
 		);
 
@@ -916,10 +916,10 @@ export async function activate(context: vscode.ExtensionContext) {
 				renderDecoration(deyi);
 				vscode.window.showInformationMessage(`翻译数据刷新成功`);
 
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_updateLocalLangPackage", {
-					action: "刷新数据",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalLangPackage", {
+				// 	action: "刷新数据",
+				// });
 			})
 		);
 		// 监听命令-文件统计
@@ -963,10 +963,10 @@ export async function activate(context: vscode.ExtensionContext) {
 					panel.webview.html = `暂无数据`;
 				}
 
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_analytics", {
-					action: "文件统计",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_analytics", {
+				// 	action: "文件统计",
+				// });
 			})
 		);
 
@@ -981,15 +981,15 @@ export async function activate(context: vscode.ExtensionContext) {
 						deyi.handleSyncTempFileToOnline(fileName, () => {
 							deyi.getOnlineLanguage();
 							vscode.window.showInformationMessage(`当前文件上传成功`);
-							// 记录用户行为数据
-							reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
-								action: "上传文案-内部-成功上传",
-							});
+							// // 记录用户行为数据
+							// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
+							// 	action: "上传文案-内部-成功上传",
+							// });
 						});
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
-							action: "上传文案-内部",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
+						// 	action: "上传文案-内部",
+						// });
 					} else {
 						vscode.window.showWarningMessage(`请完善线上化相关配置`);
 						const activeEditor = vscode.window.activeTextEditor;
@@ -997,10 +997,10 @@ export async function activate(context: vscode.ExtensionContext) {
 							const { fileName } = activeEditor.document || {};
 							deyi.openSetting(fileName, () => {});
 						}
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
-							action: "上传文案-外部",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
+						// 	action: "上传文案-外部",
+						// });
 					}
 					// const activeEditor = vscode.window.activeTextEditor;
 					// if (activeEditor) {
@@ -1020,15 +1020,15 @@ export async function activate(context: vscode.ExtensionContext) {
 					deyi.handleSyncAllTempFileToOnline(() => {
 						deyi.getOnlineLanguage();
 						vscode.window.showInformationMessage(`同步成功`);
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
-							action: "批量上传文案-内部成功上传",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
+						// 	action: "批量上传文案-内部成功上传",
+						// });
 					});
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
-						action: "批量上传文案-内部",
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
+					// 	action: "批量上传文案-内部",
+					// });
 				} else {
 					vscode.window.showWarningMessage(`请完善线上化相关配置`);
 					const activeEditor = vscode.window.activeTextEditor;
@@ -1036,10 +1036,10 @@ export async function activate(context: vscode.ExtensionContext) {
 						const { fileName } = activeEditor.document || {};
 						deyi.openSetting(fileName, () => {});
 					}
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
-						action: "批量上传文案-外部",
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
+					// 	action: "批量上传文案-外部",
+					// });
 				}
 				// const selectFolder = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, });
 				// // console.log("selectFolder", selectFolder);
@@ -1057,10 +1057,10 @@ export async function activate(context: vscode.ExtensionContext) {
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
 					if (deyi.isOnline()) {
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
-							action: "拉取远程文案-内部",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
+						// 	action: "拉取远程文案-内部",
+						// });
 
 						if (!deyi.checkProjectConfig()) {
 							return null;
@@ -1074,19 +1074,19 @@ export async function activate(context: vscode.ExtensionContext) {
 							vscode.workspace.openTextDocument(filePath).then((doc) => {
 								vscode.window.showTextDocument(doc);
 
-								// 记录用户行为数据
-								reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
-									action: "拉取远程文案-内部-成功拉取",
-								});
+								// // 记录用户行为数据
+								// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
+								// 	action: "拉取远程文案-内部-成功拉取",
+								// });
 							});
 						}
 					} else {
 						vscode.window.showWarningMessage(`请完善线上化相关配置`);
 						deyi.openSetting(fileName, () => {});
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
-							action: "拉取远程文案-外部",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
+						// 	action: "拉取远程文案-外部",
+						// });
 					}
 				}
 			})
@@ -1120,17 +1120,17 @@ export async function activate(context: vscode.ExtensionContext) {
 						vscode.workspace.openTextDocument(filePath).then((doc) => {
 							vscode.window.showTextDocument(doc);
 
-							// 记录用户行为数据
-							reporter.sendTelemetryEvent("extension_du_i18n_missingDetection", {
-								action: "翻译漏检-成功",
-							});
+							// // 记录用户行为数据
+							// reporter.sendTelemetryEvent("extension_du_i18n_missingDetection", {
+							// 	action: "翻译漏检-成功",
+							// });
 						});
 					}
 				}
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_missingDetection", {
-					action: "翻译漏检",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_missingDetection", {
+				// 	action: "翻译漏检",
+				// });
 			})
 		);
 
@@ -1166,25 +1166,25 @@ export async function activate(context: vscode.ExtensionContext) {
 										vscode.workspace.openTextDocument(filePath).then((doc) => {
 											vscode.window.showTextDocument(doc);
 
-											// 记录用户行为数据
-											reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
-												action: "远程漏检文案-内部-操作成功",
-											});
+											// // 记录用户行为数据
+											// reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
+											// 	action: "远程漏检文案-内部-操作成功",
+											// });
 										});
 									}
 								}
 							}
-							// 记录用户行为数据
-							reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
-								action: "远程漏检文案-内部",
-							});
+							// // 记录用户行为数据
+							// reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
+							// 	action: "远程漏检文案-内部",
+							// });
 						} else {
 							vscode.window.showWarningMessage(`请完善线上化相关配置`);
 							deyi.openSetting(fileName, () => {});
-							// 记录用户行为数据
-							reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
-								action: "远程漏检文案-外部",
-							});
+							// // 记录用户行为数据
+							// reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
+							// 	action: "远程漏检文案-外部",
+							// });
 						}
 					}
 				} catch(e) {
@@ -1192,16 +1192,16 @@ export async function activate(context: vscode.ExtensionContext) {
 					if (e.message) {
 						vscode.window.showWarningMessage(e.message);
 					}
-					// 记录用户行为数据
-					reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
-						action: "远程漏检文案-异常",
-						error: e,
-					});
+					// // 记录用户行为数据
+					// reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
+					// 	action: "远程漏检文案-异常",
+					// 	error: e,
+					// });
 				}
-				// 记录用户行为数据
-				reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
-					action: "远程漏检文案",
-				});
+				// // 记录用户行为数据
+				// reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
+				// 	action: "远程漏检文案",
+				// });
 			})
 		);
 
@@ -1221,10 +1221,10 @@ export async function activate(context: vscode.ExtensionContext) {
 					generateLangFile(langPaths, fileName, localLangObj, () => {
 						vscode.window.showInformationMessage(`拆分成功`);
 
-						// 记录用户行为数据
-						reporter.sendTelemetryEvent("extension_du_i18n_generateLangFile", {
-							action: "拆分语言文件-拆分成功",
-						});
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_generateLangFile", {
+						// 	action: "拆分语言文件-拆分成功",
+						// });
 					});
 				}
 			})
@@ -1233,7 +1233,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		// 在插件卸载时或使用完成后，断开与服务器的连接
 		context.subscriptions.push({
 			dispose() {
-				reporter.dispose();
+				// reporter.dispose();
 			},
 		});
 	} catch(e) {

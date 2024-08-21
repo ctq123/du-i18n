@@ -1276,7 +1276,7 @@ export function getBitCount(str: string) {
 
 // 调用百度翻译-同步翻译文件
 // https://fanyi-api.baidu.com/doc/21
-export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, reporter: any) {
+export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, reporter: any = null) {
   const transSourceObj = {};
   if (/\.(json)$/.test(fsPath)) {
     const data = fs.readFileSync(fsPath, 'utf-8');
@@ -1329,12 +1329,12 @@ export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: stri
             }
             if (count > 1000) {
               vscode.window.showWarningMessage(`翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
-              // 记录用户行为数据
-							reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-								action: "在线翻译-外部",
-                count: `字节数${count}`,
-								error: `翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`
-							});
+              // // 记录用户行为数据
+							// reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+							// 	action: "在线翻译-外部",
+              //   count: `字节数${count}`,
+							// 	error: `翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`
+							// });
               return null;
             }
           }
@@ -1345,11 +1345,11 @@ export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: stri
                 const q = getTransText(transSourceObj[lang]);
                 if (!q) {
                   vscode.window.showWarningMessage(`${defaultLang}的源文案不能为空！`);
-                  // 记录用户行为数据
-                  reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-                    action: "在线翻译-外部",
-                    error: `${defaultLang}的源文案不能为空！`
-                  });
+                  // // 记录用户行为数据
+                  // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+                  //   action: "在线翻译-外部",
+                  //   error: `${defaultLang}的源文案不能为空！`
+                  // });
                   resolve(null);
                 }
                 const params = {
@@ -1377,11 +1377,11 @@ export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: stri
                   resolve(transSourceObj);
                 }
               } catch(e) {
-                // 记录用户行为数据
-                reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-                  action: "在线翻译-外部-异常",
-                  error: e,
-                });
+                // // 记录用户行为数据
+                // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+                //   action: "在线翻译-外部-异常",
+                //   error: e,
+                // });
                 reject(e);
               }
             });

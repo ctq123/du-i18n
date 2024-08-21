@@ -263,7 +263,6 @@
 		"react": "^17.0.2",
 		"react-dom": "^17.0.2",
 		"uuid": "^9.0.0",
-		"vscode-extension-telemetry": "^0.4.5",
 		"yaml": "^1.10.2"
 	},
 	"config": {
