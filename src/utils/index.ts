@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 import MapCache from './cache';
 import * as Baidu from './baidu';
-import { resolve } from 'path';
-import { DEYI } from './deyi';
 const path = require('path');
 const fs = require('fs');
 const YAML = require('yaml');
@@ -533,20 +531,7 @@ export async function searchLocalI18NFiles(selectFolderPath: any) {
               addPath(fsPath);
             }
           }
-          // if (!fileLogPath) {
-          //   let arr = fsPath.split(path.sep);
-          //   if (arr.includes('src')) {
-          //     fileLogPath = arr.slice(0, arr.indexOf('src')).join('/');
-          //   } else {
-          //     fileLogPath = path.dirname(fsPath);
-          //   }
-          //   fileLogPath += '/local-i18n-files-log.md';
-          // }
         });
-        // console.log("fileLogPath", fileLogPath);
-        // if (fileLogPath) {
-        //   writeFileToLine(fileLogPath, fileList.join('\n'));
-        // }
         fileList.sort();
         resolve({ fileList, fileLogPath });
       }
@@ -901,27 +886,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
       return i18nT;
     };
     
-    // const getI18NStr = (keys: any[]) => {
-    //   let langObj: any = {
-    //     zh: {},
-    //   };
-    //   (initLang || []).forEach(lang => {
-    //     langObj[lang] = {};
-    //   });
-    //   (keys || []).forEach((char, i) => {
-    //     const key = `${keyPrefix}${i}`;
-    //     const val = (varObj[char] && varObj[char].newKey) || char;
-    //     langObj.zh[key] = val;
-    //     (initLang || []).forEach(lang => {
-    //       langObj[lang][key] = '';
-    //     });
-    //   });
-    //   // console.log("langObj", langObj)
-    //   const yamlStr = YAML.stringify(langObj);
-    //   // console.log("yamlStr", yamlStr)
-    //   return yamlStr;
-    // };
-
     const getScriptType = (str: string) => {
       const reg = /<script.*?>/;
       const arr = reg.exec(str);
@@ -930,15 +894,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
       } else {
         return -1;
       }
-      // let type = '<script>';
-      // if (str.indexOf(type) > -1) {
-      //   return str.indexOf(type) + type.length;
-      // }
-      // type = '<script lang="ts">';
-      // if (str.indexOf(type) > -1) {
-      //   return str.indexOf(type) + type.length;
-      // }
-      // return -1;
     };
     
     const getTemplateStr = (keys: any[]) => {
@@ -1005,18 +960,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
       return text;
     };
 
-    // const handleI18N = () => {
-    //   // 初始化中文和日语
-    //   const i18nStr = getI18NStr(chars);
-    //   const i18nStartIndex = newData.indexOf('<i18n>') + '<i18n>'.length;
-    //   const i18nEndIndex = newData.lastIndexOf('</i18n>');
-    //   if (i18nEndIndex < 0) {
-    //     newData = `<i18n>\n${i18nStr}</i18n>\n` + newData;
-    //   } else {
-    //     newData = newData.slice(0, i18nStartIndex) + '\n' + i18nStr + newData.slice(i18nEndIndex);
-    //   }
-    // };
-
     const handleTemplate = () => {
       // 将原文件替换$t('key')形式
       const templateStr = getTemplateStr(chars);
@@ -1067,28 +1010,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
       return i18nT;
     };
 
-    // const getNewLangObj = (keys: any[]) => {
-    //   const langObj: any = {
-    //     zh: {},
-    //     zhStr: '',
-    //   };
-    //   (initLang || []).forEach(lang => {
-    //     langObj[lang] = {};
-    //     langObj[`${lang}Str`] = '';
-    //   });
-    //   (keys || []).forEach((char, i) => {
-    //     const key = `${keyPrefix}${i}`;
-    //     const val = (varObj[char] && varObj[char].newKey) || char;
-    //     const isIncludeComma = val && val.includes("'");
-    //     langObj.zh[key] = val;
-    //     langObj.zhStr += isIncludeComma ? (`'${key}': "${val}",\n`) : (`'${key}': '${val}',\n`);
-    //     (initLang || []).forEach(lang => {
-    //       langObj[lang][key] = '';
-    //       langObj[`${lang}Str`] += (`'${key}': '',\n`);
-    //     });
-    //   });
-    //   return langObj;
-    // };
 
     const replaceI18nStr = (keys: any[]) => {
       let text = data;
@@ -1104,25 +1025,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
       });
       return text;
     };
-
-    // const handleInsertI18nFile = async () => {
-    //   const newLangObj = getNewLangObj(chars);
-    //   console.log("newLangObj", newLangObj);
-    //   const langKeys = Object.keys(newLangObj).filter(k => !k.endsWith('Str'));
-    //   // 源文件 
-    //   const sourcePath = '**/i18n/locale/**';
-    //   const files = await getFiles(sourcePath);
-    //   console.log("files", files);
-    //   files.forEach((file) => {
-    //     const fileName = path.basename(file.fsPath);
-    //     const lang = fileName.split('.')[0];
-    //     if (langKeys.includes(lang)) {
-    //       // 写入自定义语言全局变量
-    //       const text = newLangObj[`${lang}Str`];
-    //       writeJsonFileSync(file.fsPath, text);
-    //     }
-    //   });
-    // };
 
     const handleReplace = () => {
       // 初始化中文和日语
@@ -1155,30 +1057,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
   if (data && chars.length) {
     // 处理含有变量的key
     const varObj: any = getVarObj(chars);
-    // const getDomStr = (keys: any[], dataText: any) => {
-    //   let text = dataText;
-    //   (keys || []).forEach((char, i) => {
-    //     const key = `${keyPrefix}${i}`;
-    //     const replaceKey = quoteKeys[0];
-    //     const i18nT = getI18nT(replaceKey, key, char);
-        
-    //     let startIndex = -1, endIndex = 0;
-    //     while((startIndex = text.indexOf(char, endIndex)) > -1) {
-    //       // console.log("i18nT", i18nT, startIndex);
-    //       endIndex = startIndex + char.length;
-    //       let str = '', pre = text[startIndex - 1], suff = text[endIndex];
-    //       // console.log("text[endIndex]", pre, suff)
-    //       if (chineseCharReg.test(pre) || chineseCharReg.test(suff)) {// 前后的字符还是中文，说明属于包含关系
-    //         continue;
-    //       }
-          
-    //       str = `{${i18nT}}`;
-    //       text = text.slice(0, startIndex) + str + text.slice(endIndex);
-    //     }
-    //   });
-    //   return text;
-    // };
-    // 获取新的$t引用
     const getI18nT = (suffix: string, key: string, char: string) => {
       const keyStr = isSingleQuote ? `'${key}'` : `"${key}"`;
       let i18nT = `${suffix}(${keyStr})`;
