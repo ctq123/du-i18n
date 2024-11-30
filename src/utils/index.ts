@@ -15,6 +15,7 @@ const chineseChar2Reg = /[\u4e00-\u9fa5]+|[\u4e00-\u9fa5]/g;
 const varReg = /\$\{(.[^\}]+)?\}/g; // 判断包含${}的正则
 let decorationType = null;
 const globalPkgPath = '**/package.json';
+const boundaryCodes = ['"', "'", "`"]; // 字符串边界
 
 /**
  * 获取复制对象的value
@@ -616,14 +617,14 @@ export function getGenerateNewLangObj(keys: any[], defaultLang: string, initLang
  * @param data 
  * @param filePath 
  */
-export function handleScanAndInit(filePath: string, initLang: string[], quoteKeys: string[], defaultLang: string, prefixKey: string, isSingleQuote: boolean, cb: Function) {
+export function handleScanAndInit(filePath: string, initLang: string[], quoteKeys: string[], defaultLang: string, prefixKey: string, isSingleQuote: boolean, keyBoundaryChars: string[], cb: Function) {
   try {
     // 判断当前文档是否包含i18n的引用
     if (/\.(vue)$/.test(filePath)) {
       handleReadStream(filePath, (data) => {
         if (data) {
           // 获取所有汉字文案
-          const chars = getChineseCharList(data);
+          const chars = getChineseCharList(data, keyBoundaryChars);
           console.log("chars", chars);
           if (!chars || !chars.length) {return;}
           // 获取新的文件内容
@@ -640,7 +641,7 @@ export function handleScanAndInit(filePath: string, initLang: string[], quoteKey
       handleReadStream(filePath, (data) => {
         if (data) {
           // 获取所有汉字文案
-          const chars = getChineseCharList(data);
+          const chars = getChineseCharList(data, keyBoundaryChars);
           console.log("chars", chars);
           if (!chars || !chars.length) {return;}
           // 获取新的文件内容
@@ -657,7 +658,7 @@ export function handleScanAndInit(filePath: string, initLang: string[], quoteKey
       handleReadStream(filePath, (data) => {
         if (data) {
           // 获取所有汉字文案
-          const chars = getChineseCharList(data);
+          const chars = getChineseCharList(data, keyBoundaryChars);
           console.log("chars", chars);
           if (!chars || !chars.length) {return;}
           // 获取新的文件内容
@@ -741,14 +742,45 @@ export function getI18NObject(data: string) {
 }
 
 /**
+ * 判断是否在区间内
+ * @param i 位置index
+ * @param list 区间数组，如[[34, 89], [100, 200]]
+ * @returns 
+ */
+function isInRange(i: number, list: Array<any[]>) {
+  if (!list.length) return false;
+
+  list.sort((a, b) => a[0] - b[0]);
+
+  // 使用二分查找查找合适的区间
+  let left = 0;
+  let right = list.length - 1;
+
+  while (left <= right) {
+    let mid = (left + right) >> 1;
+    let [start, end] = list[mid];
+
+    if (i < start) {
+      right = mid - 1;
+    } else if (i > end) {
+      left = mid + 1;
+    } else {
+      return true;  // 如果 i 在当前的区间内，返回 true
+    }
+  }
+  
+  return false;  // 如果没有找到合适的区间，返回 false
+}
+
+/**
  * 提取所有中文字符串
  * @param data 
  * @returns 
  */
-function getChineseCharList(data: string) {
+function getChineseCharList(data: string, keyBoundaryChars: string[]) {
   let result = [];
   const excludes = ['v-track:'];
-  const endChars = ["'", '"', '`', '\n', '>', '<', '}', '{', '(', ')'];
+  const endChars = boundaryCodes.concat(keyBoundaryChars);
   const replaceKeys = [[/&nbsp;/g, ""]];
   if (data && chineseCharReg.test(data)) {
     const noteList0 = getNotePositionList(data, '<i18n>', '</i18n>');
@@ -764,9 +796,7 @@ function getChineseCharList(data: string) {
       let key = c;
       if (i < nextIndex) {continue;}
       // 是否在注释位置
-      if (notePositionList.length) {
-        if (notePositionList.find(item => item[0] < i && i < item[1])) {continue;}
-      }
+      if (isInRange(i, notePositionList)) {continue;}
       // 向前找
       while(!endChars.includes(data[begin])) {
         begin--;
@@ -875,7 +905,7 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
             str = ':' + text.substring(preIndex, endIndex);
             str = str.replace(char, i18nT);
             text = text.slice(0, preIndex) + str + text.slice(endIndex);
-          } else if (['"', "'", "`"].includes(suff) && pre === suff) {// 冒号的引用
+          } else if (boundaryCodes.includes(suff) && pre === suff) {// 冒号的引用
             str = i18nT;
             text = text.slice(0, startIndex - 1) + str + text.slice(endIndex + 1);
           } else {

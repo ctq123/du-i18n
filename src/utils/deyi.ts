@@ -34,11 +34,11 @@ export class DEYI {
   private uncheckMissKeys: string[];
   private prefixKey: string | null;
   private keyJoinStr: string | null;
+  private keyBoundaryChars: string[];
   private missCheckResultPath: string;
   private languageMissOnlinePath: string;
   private isNeedRandSuffix: boolean;
   private isSingleQuote: boolean;
-  private isOnlineTrans: boolean;
   private baiduAppid: string;
   private baiduSecrectKey: string;
   private fileReg: RegExp;
@@ -66,6 +66,7 @@ export class DEYI {
     this.pullLangs = []; // 指定翻译扩展的语言，优先级比tempLangs高，远程不允许覆盖
     this.tempLangs = ['zh', 'en'];// 翻译扩展语言，远程的会覆盖
     this.quoteKeys = ["this.$t", "$t", "i18n.t"]; // 引用key
+    this.keyBoundaryChars = ['\n', '>', '<', '}', '{', '(', ')']; // 引用key的边界字符
     this.bigFileLineCount = 1000;// 大文件行数
     this.isOverWriteLocal = false;// 是否覆盖本地已填写的翻译
     this.uncheckMissKeys = [];// 跳过翻译漏检机制的key，打标已翻译
@@ -74,7 +75,6 @@ export class DEYI {
     this.prefixKey = null;// key前缀
     this.keyJoinStr = null; // key连接符
 
-    this.isOnlineTrans = true;// 本地-是否支持在线翻译
     this.baiduAppid = '';// 百度翻译appid
     this.baiduSecrectKey = '';// 百度翻译密钥
 
@@ -97,8 +97,8 @@ export class DEYI {
               bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys,
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys,
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote,
-              isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
-              vueAndReactReg, keyJoinStr,
+              baiduAppid, baiduSecrectKey, prefixKey,
+              vueAndReactReg, keyJoinStr, keyBoundaryChars,
             } = config || {};
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
@@ -110,6 +110,7 @@ export class DEYI {
             this.tempLangs = Array.isArray(tempLangs) && tempLangs.length ? tempLangs : this.tempLangs;
             this.defaultLang = defaultLang || this.tempLangs[0];
             this.quoteKeys = Array.isArray(quoteKeys) && quoteKeys.length ? quoteKeys : this.quoteKeys;
+            this.keyBoundaryChars = Array.isArray(keyBoundaryChars) && keyBoundaryChars.length ? keyBoundaryChars : this.keyBoundaryChars;
             this.transSourcePaths = transSourcePaths || this.transSourcePaths;
             this.tempPaths = tempPaths || this.tempPaths;
             this.tempFileName = tempFileName || this.tempFileName;
@@ -118,7 +119,6 @@ export class DEYI {
             this.isNeedRandSuffix = typeof isNeedRandSuffix === 'boolean' ? isNeedRandSuffix : this.isNeedRandSuffix;
             this.langPaths = langPaths || this.langPaths;
             this.isSingleQuote = typeof isSingleQuote === 'boolean' ? isSingleQuote : this.isSingleQuote;
-            this.isOnlineTrans = typeof isOnlineTrans === 'boolean' ? isOnlineTrans : this.isOnlineTrans;
             this.baiduAppid = baiduAppid || this.baiduAppid;
             this.baiduSecrectKey = baiduSecrectKey || this.baiduSecrectKey;
             this.prefixKey = typeof prefixKey === 'string' ? prefixKey : this.prefixKey;
@@ -156,12 +156,12 @@ export class DEYI {
       prefixKey: this.prefixKey,
       // key连接符，默认null为'.'
       keyJoinStr: this.keyJoinStr,
+      // 引用key的边界字符
+      keyBoundaryChars: this.keyBoundaryChars,
       // 跳过翻译漏检机制的key，打标已翻译
       uncheckMissKeys: this.uncheckMissKeys,
       // key的引用是单引号还是双引号，默认是单引号
       isSingleQuote: this.isSingleQuote,
-      // 本地-是否支持在线翻译
-      isOnlineTrans: this.isOnlineTrans,
       // 本地-百度翻译appid
       baiduAppid: this.baiduAppid,
       // 本地-百度翻译密钥
@@ -222,6 +222,10 @@ export class DEYI {
     return '';
   }
 
+  getKeyBoundaryChars() {
+    return this.keyBoundaryChars;
+  }
+
   getFileReg() {
     return this.fileReg;
   }
@@ -275,14 +279,6 @@ export class DEYI {
 
   getIsSingleQuote() {
     return this.isSingleQuote;
-  }
-
-  /**
-   * 是否支持本地在线翻译，如百度翻译，默认支持
-   * @returns 
-   */
-  getIsOnlineTrans() {
-    return this.isOnlineTrans;
   }
 
   getLangPaths() {

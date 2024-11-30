@@ -208,11 +208,12 @@ export async function activate(context: vscode.ExtensionContext) {
 						const tempFileName = deyi.getTempFileName();
 						const isNeedRandSuffix = deyi.getIsNeedRandSuffix();
 						const isSingleQuote = deyi.getIsSingleQuote();
+						const keyBoundaryChars = deyi.getKeyBoundaryChars();
 						const handleRefresh = async () => {
 							await deyi.refreshGlobalLangObj();
 							renderDecoration(deyi);
 						};
-						handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, (newLangObj) => {
+						handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, (newLangObj) => {
 							if (!isEmpty(newLangObj)) {
 								writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
 									if (deyi.isOnline()) {
@@ -291,8 +292,9 @@ export async function activate(context: vscode.ExtensionContext) {
 							const pageEnName = deyi.generatePageEnName(fileName);
 							const tempFileName = deyi.getTempFileName();
 							const isNeedRandSuffix = deyi.getIsNeedRandSuffix();
+							const keyBoundaryChars = deyi.getKeyBoundaryChars();
 							
-							handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, (newLangObj) => {
+							handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, (newLangObj) => {
 								if (!isEmpty(newLangObj)) {
 									writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
 										if (deyi.isOnline()) {
@@ -359,7 +361,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-成功",
 						// });
 					};
-					if (deyi.isOnline() || deyi.getIsOnlineTrans() === false) {// 在线
+					if (deyi.isOnline()) {// 在线
 						const transSourceObj = deyi.getTransSourceObj();
 						// console.log('transSourceObj', transSourceObj);
 						if (isEmpty(transSourceObj)) {
@@ -374,6 +376,10 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-内部",
 						// });
 					} else {// 调用百度翻译
+						if (!deyi.getBaiduAppid() || !deyi.getBaiduSecrectKey()) {
+							vscode.window.showWarningMessage(`请先配置百度翻译key，地址详情https://fanyi-api.baidu.com/doc/21`);
+							return;
+						}
 						const activeEditor = vscode.window.activeTextEditor;
 						if (activeEditor) {
 							const { fileName } = activeEditor.document || {};
