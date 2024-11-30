@@ -43,7 +43,6 @@ export class DEYI {
   private baiduSecrectKey: string;
   private fileReg: RegExp;
   private jsonReg: RegExp;
-  private vueReg: RegExp;
   private vueAndReactReg: RegExp;
 
   constructor(props: any = {}) {
@@ -81,7 +80,6 @@ export class DEYI {
 
     this.fileReg = /\.(ts|js|tsx|jsx|vue|html)$/;
     this.jsonReg = /\.(json)$/;
-    this.vueReg = /\.(vue)$/;
     this.vueAndReactReg = /\.(vue|tsx|jsx)$/;
   }
   async readConfig() {
@@ -100,7 +98,7 @@ export class DEYI {
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
               isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
-              vueReg, vueAndReactReg, keyJoinStr,
+              vueAndReactReg, keyJoinStr,
             } = config || {};
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
@@ -127,7 +125,6 @@ export class DEYI {
             this.keyJoinStr = typeof keyJoinStr === 'string' ? keyJoinStr : this.keyJoinStr;
 
             this.fileReg = fileReg || this.fileReg;
-            this.vueReg = vueReg || this.vueReg;
             this.vueAndReactReg = vueAndReactReg || this.vueAndReactReg;
           }
         } catch(e) {
@@ -163,8 +160,6 @@ export class DEYI {
       uncheckMissKeys: this.uncheckMissKeys,
       // key的引用是单引号还是双引号，默认是单引号
       isSingleQuote: this.isSingleQuote,
-      // vue文件正则
-      vueReg: this.vueReg,
       // 本地-是否支持在线翻译
       isOnlineTrans: this.isOnlineTrans,
       // 本地-百度翻译appid
