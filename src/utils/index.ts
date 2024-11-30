@@ -367,7 +367,7 @@ export async function handleAnalystics(selectFolderPath: any, bigFileLineCount: 
         resolve({ bigFileList, fileTypeObj, indexFileObj });
       }
     } catch(e) {
-      console.error("searchLocalI18NFiles e", e);
+      console.error("handleAnalystics e", e);
       reject(e);
     }
   });
@@ -485,61 +485,6 @@ export async function ananlysisLocalGlobal(filePath: any) {
   // console.log('newFilePath', newFilePath);
   const newFilePath = await writeContentToLocalFile(filePath, fileName, newLangObj);
   return newFilePath;
-}
-
-// 搜索包含i18n的文件
-// 即将废弃
-export async function searchLocalI18NFiles(selectFolderPath: any) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if (!selectFolderPath) { 
-        return reject(null);
-      }
-      const folderPaths = selectFolderPath.replace(/\//g, path.sep).split(path.sep);
-      // console.log("folderPaths", folderPaths);
-      const len = folderPaths.length;
-      if (len) {
-        let folderUrl = folderPaths[len - 1];
-        if (folderPaths.includes('src')) {
-          folderUrl = folderPaths.slice(folderPaths.indexOf('src')).join(path.sep);
-        }
-        folderUrl = '**' + path.sep + folderUrl + path.sep + '**';;
-        const files = await getFiles(folderUrl);
-        // console.log("files", files);
-        let fileList = [], fileLogPath='';
-        const addPath = (fsPath) => {
-          let arr = fsPath.split(path.sep);
-          let filePath = fsPath;
-          if (arr.includes('src')) {
-            filePath = arr.slice(arr.indexOf('src')).join(path.sep);
-          }
-          // console.log("filePath", filePath);
-          fileList.push(filePath);
-        };
-        files.forEach(({ fsPath }) => {
-          if (/\.(vue)$/.test(fsPath)) {
-            const data = fs.readFileSync(fsPath, 'utf-8');
-            if (data && data.indexOf('<i18n>') > -1) {
-              addPath(fsPath);
-            }
-          }
-          if (/\.(js|ts)$/.test(fsPath)) {
-            const data = fs.readFileSync(fsPath, 'utf-8');
-            const reg = new RegExp(`i18n\\.t\\((['"]+)(.+)(['"]+)`, 'gi');
-            const arr = data.match(reg);
-            if (arr && arr.some(item => !item.startsWith("i18n.t('global_"))) {
-              addPath(fsPath);
-            }
-          }
-        });
-        fileList.sort();
-        resolve({ fileList, fileLogPath });
-      }
-    } catch(e) {
-      console.error("searchLocalI18NFiles e", e);
-      reject(e);
-    }
-  });
 }
 
 // 生成临时文件

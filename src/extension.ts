@@ -14,7 +14,6 @@ import {
 	translateFromChineseKey,
 	handleMultiTranslateFromChineseKey,
 	handleReadStream,
-	searchLocalI18NFiles,
 	handleAnalystics,
 	ananlysisLocalGlobal,
 	writeContentToLocalFile,
