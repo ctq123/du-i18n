@@ -39,6 +39,7 @@ export class DEYI {
   private languageMissOnlinePath: string;
   private isNeedRandSuffix: boolean;
   private isSingleQuote: boolean;
+  private isOnlineTrans: boolean;
   private baiduAppid: string;
   private baiduSecrectKey: string;
   private fileReg: RegExp;
@@ -75,6 +76,7 @@ export class DEYI {
     this.prefixKey = null;// key前缀
     this.keyJoinStr = null; // key连接符
 
+    this.isOnlineTrans = true;// 本地-是否支持在线翻译
     this.baiduAppid = '';// 百度翻译appid
     this.baiduSecrectKey = '';// 百度翻译密钥
 
@@ -97,7 +99,7 @@ export class DEYI {
               bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys,
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys,
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote,
-              baiduAppid, baiduSecrectKey, prefixKey,
+              isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
               vueAndReactReg, keyJoinStr, keyBoundaryChars,
             } = config || {};
             this.projectName = projectName || this.projectName;
@@ -119,6 +121,7 @@ export class DEYI {
             this.isNeedRandSuffix = typeof isNeedRandSuffix === 'boolean' ? isNeedRandSuffix : this.isNeedRandSuffix;
             this.langPaths = langPaths || this.langPaths;
             this.isSingleQuote = typeof isSingleQuote === 'boolean' ? isSingleQuote : this.isSingleQuote;
+            this.isOnlineTrans = typeof isOnlineTrans === 'boolean' ? isOnlineTrans : this.isOnlineTrans;
             this.baiduAppid = baiduAppid || this.baiduAppid;
             this.baiduSecrectKey = baiduSecrectKey || this.baiduSecrectKey;
             this.prefixKey = typeof prefixKey === 'string' ? prefixKey : this.prefixKey;
@@ -162,6 +165,8 @@ export class DEYI {
       uncheckMissKeys: this.uncheckMissKeys,
       // key的引用是单引号还是双引号，默认是单引号
       isSingleQuote: this.isSingleQuote,
+      // 是否开启在线翻译
+      isOnlineTrans: this.isOnlineTrans,
       // 本地-百度翻译appid
       baiduAppid: this.baiduAppid,
       // 本地-百度翻译密钥
@@ -283,6 +288,10 @@ export class DEYI {
 
   getLangPaths() {
     return this.langPaths;
+  }
+
+  getIsOnlineTrans() {
+    return this.isOnlineTrans;
   }
 
   getBaiduAppid() {
@@ -410,19 +419,6 @@ export class DEYI {
       return false;
     }
     return true;
-  }
-
-  /**
-   * 判断是否有本地翻译源
-   * @returns 
-   */
-  async hasLocalTransSource() {
-    if (!isEmpty(this.transSourceObj)) return true;
-    const files = await getFiles(this.transSourcePaths);
-    if (isEmpty(files)) return false;
-    // 检查是否有文件以 .json 结尾
-    const jsonFiles = files.filter(file => path.extname(file) === '.json');
-    return !!jsonFiles.length;
   }
 
   // 设置翻译源文案
@@ -590,16 +586,22 @@ export class DEYI {
     return key;
   }
 
-  // 搜索未翻译的目标语言
-  async searchUntranslateText(fromLang: string, toLang: string) {
+  /**
+   * 搜索未翻译的目标语言
+   * @param fromLang 
+   * @param toLang 
+   * @param isDeyi 是否属于内部翻译
+   * @returns 
+   */
+  async searchUntranslateText(fromLang: string, toLang: string, isDeyi: boolean = true) {
     try {
-      const onlineLangObj = this.getOnlineLangObj() || {};
+      const sourceLangObj = isDeyi ? this.getOnlineLangObj() : this.getLocalLangObj();
       const unTranslateLangObj = {};
-      const fromLangObj = onlineLangObj[fromLang];
+      const fromLangObj = sourceLangObj[fromLang];
       if (isEmpty(fromLangObj)) {
         throw new Error('数据异常');
       }
-      const toLangObj = onlineLangObj[toLang] || {};
+      const toLangObj = sourceLangObj[toLang] || {};
       const fromLangMap = {};
       const toLangMap = {};
       // console.log('fromLangObj', fromLangObj);

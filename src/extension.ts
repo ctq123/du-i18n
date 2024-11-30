@@ -348,10 +348,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
 					// console.log("vscode 中文转译")
 					const langKey = userKey || deyi.getDefaultLang();
+					const tempPaths = deyi.getTempPaths();
+					const isOverWriteLocal = deyi.getIsOverWriteLocal();
+
 					const handleTranslate = async (sourObj: any = {}, filePath: string = '') => {
 						// console.log("transSourceObj", transSourceObj);
-						const tempPaths = deyi.getTempPaths();
-						const isOverWriteLocal = deyi.getIsOverWriteLocal();
 						await translateLocalFile(sourObj, langKey, tempPaths, filePath, isOverWriteLocal);
 						if (!deyi.isOnline()) {
 							await deyi.refreshGlobalLangObj();
@@ -361,7 +362,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-成功",
 						// });
 					};
-					if (deyi.isOnline() || deyi.hasLocalTransSource()) {// 在线
+					if (deyi.isOnline()) {
 						const transSourceObj = deyi.getTransSourceObj();
 						// console.log('transSourceObj', transSourceObj);
 						if (isEmpty(transSourceObj)) {
@@ -376,10 +377,13 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-内部",
 						// });
 					} else {// 调用百度翻译
-						if (!deyi.getBaiduAppid() || !deyi.getBaiduSecrectKey()) {
-							vscode.window.showWarningMessage(`请先配置百度翻译key，地址详情https://fanyi-api.baidu.com/doc/21`);
-							return;
+						if (this.getIsOnlineTrans() === false) {
+							if (!deyi.getBaiduAppid() || !deyi.getBaiduSecrectKey()) {
+								vscode.window.showWarningMessage(`请先配置百度翻译key，地址详情https://fanyi-api.baidu.com/doc/21`);
+								return;
+							}
 						}
+						
 						const activeEditor = vscode.window.activeTextEditor;
 						if (activeEditor) {
 							const { fileName } = activeEditor.document || {};
@@ -390,7 +394,7 @@ export async function activate(context: vscode.ExtensionContext) {
 								const baiduAppid = deyi.getBaiduAppid();
 								const baiduSecrectKey = deyi.getBaiduSecrectKey();
 								// 调用百度翻译
-								const transSourceObj = await getTransSourceObjByBaidu(fileName, langKey, baiduAppid, baiduSecrectKey);
+								const transSourceObj = await getTransSourceObjByBaidu(fileName, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
 								// console.log('transSourceObj', transSourceObj);
 								if (!isEmpty(transSourceObj)) {
 									handleTranslate(transSourceObj, fileName);

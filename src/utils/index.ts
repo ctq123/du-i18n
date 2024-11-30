@@ -1129,7 +1129,7 @@ export function getBitCount(str: string) {
 
 // 调用百度翻译-同步翻译文件
 // https://fanyi-api.baidu.com/doc/21
-export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, reporter: any = null) {
+export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, isOverWriteLocal: boolean = false) {
   const transSourceObj = {};
   if (/\.(json)$/.test(fsPath)) {
     const data = fs.readFileSync(fsPath, 'utf-8');
