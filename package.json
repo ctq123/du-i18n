@@ -16,6 +16,9 @@
 		"Notebooks"
 	],
 	"keywords": [
+		"du",
+		"du-i18n",
+		"du i18n",
 		"i18n",
 		"i18n Ally",
 		"i18n ally",
@@ -37,20 +40,18 @@
 		"自动翻译",
 		"中文",
 		"扫描",
+		"文案",
 		"翻译",
 		"翻译插件",
+		"中英翻译",
 		"i18n vue",
-		"文案",
-		"du",
-		"du-i18n",
 		"vue",
 		"vue3",
 		"react",
 		"ali",
-		"dewu",
 		"react-intl",
 		"国际化 i18n",
-		"poizon"
+		"国际化插件"
 	],
 	"icon": "public/logo.png",
 	"activationEvents": [
