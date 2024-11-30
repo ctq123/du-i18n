@@ -33,6 +33,7 @@ export class DEYI {
   private quoteKeys: string[];
   private uncheckMissKeys: string[];
   private prefixKey: string | null;
+  private keyJoinStr: string | null;
   private missCheckResultPath: string;
   private languageMissOnlinePath: string;
   private isNeedRandSuffix: boolean;
@@ -72,6 +73,7 @@ export class DEYI {
     this.isNeedRandSuffix = true;// tempPaths下的文件是否生成文件名后缀
     this.isSingleQuote = true;// key的引用是单引号还是双引号，默认是单引号
     this.prefixKey = null;// key前缀
+    this.keyJoinStr = null; // key连接符
     
     this.isOnlineTrans = true;// 本地-是否支持在线翻译
     this.baiduAppid = '';// 百度翻译appid
@@ -98,7 +100,7 @@ export class DEYI {
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
               isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
-              vueReg, vueAndReactReg,
+              vueReg, vueAndReactReg, keyJoinStr,
             } = config || {};
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
@@ -122,6 +124,7 @@ export class DEYI {
             this.baiduAppid = baiduAppid || this.baiduAppid;
             this.baiduSecrectKey = baiduSecrectKey || this.baiduSecrectKey;
             this.prefixKey = typeof prefixKey === 'string' ? prefixKey : this.prefixKey;
+            this.keyJoinStr = typeof keyJoinStr === 'string' ? keyJoinStr : this.keyJoinStr;
 
             this.fileReg = fileReg || this.fileReg;
             this.vueReg = vueReg || this.vueReg;
@@ -136,20 +139,37 @@ export class DEYI {
 
   getInitConfig() {
     const initConfig = {
+      // 引用key
       quoteKeys: this.quoteKeys,
+      // 默认语言
       defaultLang: this.defaultLang,
+      // 翻译扩展语言
       tempLangs: this.tempLangs,
+      // 语言文件路径
       langPaths: this.langPaths,
+      // 翻译源文件路径(无本地翻译库的忽略)
       transSourcePaths: this.transSourcePaths,
+      // 新增翻译文案路径
       tempPaths: this.tempPaths,
+      // 指定生成json文件名
       tempFileName: this.tempFileName,
+      // 复杂文件夹
       multiFolders: this.multiFolders,
+      // key前缀
       prefixKey: this.prefixKey,
+      // key连接符，默认null为'.'
+      keyJoinStr: this.keyJoinStr,
+      // 跳过翻译漏检机制的key，打标已翻译
       uncheckMissKeys: this.uncheckMissKeys,
+      // key的引用是单引号还是双引号，默认是单引号
       isSingleQuote: this.isSingleQuote,
-      isOnlineTrans: this.isOnlineTrans,
+      // vue文件正则
       vueReg: this.vueReg,
+      // 本地-是否支持在线翻译
+      isOnlineTrans: this.isOnlineTrans,
+      // 本地-百度翻译appid
       baiduAppid: this.baiduAppid,
+      // 本地-百度翻译密钥
       baiduSecrectKey: this.baiduSecrectKey,
     };
     return initConfig;
@@ -460,41 +480,8 @@ export class DEYI {
       const files = await getFiles(this.tempPaths);
       if (files.length) {
         result = {};
-        const defaultKeyObj = {};
-        //   // 更新在线全局语言
-        //   await this.getOnlineLanguage('', true);
-        //   // 检测在线翻译情况
-        //   files.forEach(({ fsPath }) => {
-        //     const fileName = path.basename(fsPath);
-        //     if (/\.(json)$/.test(fileName)) {
-        //       const data = fs.readFileSync(fsPath, 'utf-8');
-        //       if (data) {
-        //         const langObj = eval(`(${data})`);
-        //         if (!isEmpty(langObj)) {
-        //           const newObj: any = {};
-        //           const defaultLang = this.defaultLang;
-        //           const defaultLangObj = this.onlineLangObj[defaultLang] || {};
-        //           Object.entries(langObj).forEach(([lang, obj]) => {
-        //             if (lang !== defaultLang) {
-        //               // 检测key在线翻译的情况
-        //               const onlinLang = this.onlineLangObj[lang] || {};
-        //               // console.log('onlinLang', onlinLang);
-        //               Object.keys(obj).forEach((k) => {
-        //                 if (!this.uncheckMissKeys.includes(k)) {
-        //                   if (!onlinLang[k]) {// 缺少翻译
-        //                     if (!newObj[defaultLang]) {
-        //                       newObj[defaultLang] = {};
-        //                     }
-        //                     if (!newObj[lang]) {
-        //                       newObj[lang] = {};
-        //                     }
-        //                     newObj[defaultLang][k] = defaultLangObj[k];
-        //                     newObj[lang][k] = onlinLang[k] || "";
-        //                     defaultKeyObj[defaultLangObj[k]] = defaultLangObj[k];
-        //                   }
-        //                 }
-  
-          // 检测本地翻译情况
+        const defaultKeyObj = {};    
+        // 检测本地翻译情况
           files.forEach(({ fsPath }) => {
             const fileName = path.basename(fsPath);
             if (/\.(json)$/.test(fileName)) {
@@ -588,7 +575,7 @@ export class DEYI {
     let key = typeof this.prefixKey === 'string' ? this.prefixKey : `${dirName}.${fileName}`;
     const rand = Date.now().toString().substr(-5);
     const rand2 = index || Math.floor(Math.random() * 10);
-    return `${key}.${rand}${rand2}-`;
+    return this.keyJoinStr !== null ? `${key}${this.keyJoinStr}${rand}${rand2}${this.keyJoinStr}` : `${key}.${rand}${rand2}-`;
   }
 
   getPrefixKey(fsPath: string, index: string = '') {
@@ -626,63 +613,6 @@ export class DEYI {
       console.error(e);
       return null;
     }
-  }
-
-  // 搜索包含i18n的文件
-  searchRepeatFilesPath(selectFolderPath: any) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        if (!selectFolderPath) { 
-          return reject(null);
-        }
-        const folderPaths = selectFolderPath.replace(/\//g, path.sep).split(path.sep);
-        // console.log("folderPaths", folderPaths);
-        const len = folderPaths.length;
-        if (len) {
-          let folderUrl = folderPaths[len - 1];
-          if (folderPaths.includes('src')) {
-            folderUrl = folderPaths.slice(folderPaths.indexOf('src')).join(path.sep);
-          }
-          folderUrl = '**' + path.sep + folderUrl + path.sep + '**';;
-          const files = await getFiles(folderUrl);
-          // console.log("files", files);
-          const getPath = (fsPath) => {
-            let arr = fsPath.split(path.sep);
-            let filePath = fsPath;
-            if (arr.includes('src')) {
-              filePath = arr.slice(arr.indexOf('src')).join(path.sep);
-            }
-            // console.log("filePath", filePath);
-            return filePath;
-          };
-          
-          const repeatPathList = [];
-          const moduleObj = {};
-          const existObj = {};
-          files.forEach(({ fsPath }) => {
-            if (this.vueAndReactReg.test(fsPath)) {
-              const pageEnName = this.generatePageEnName(fsPath);
-              const key = this.getPrefixKey(fsPath);
-              if (!existObj[key]) {
-                existObj[key] = fsPath;
-              } else {
-                const oldPath = getPath(existObj[key]);
-                const newPath = getPath(fsPath);
-                repeatPathList.push({ pageEnName, key, oldPath, newPath, fsPath });
-                if (!moduleObj[pageEnName]) {
-                  moduleObj[pageEnName] = [{ key, oldPath, newPath, fsPath }];
-                } else {
-                  moduleObj[pageEnName].push({ key, oldPath, newPath, fsPath });
-                }
-              }
-            }
-          });
-          resolve({ repeatPathList, moduleObj });
-        }
-      } catch(e) {
-        reject(e);
-      }
-    });
   }
 
   // 同步单个本地temp文件的文案到deyi平台

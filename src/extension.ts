@@ -11,7 +11,6 @@ import {
 	getRegExp,
 	getStringValue,
 	handleScanAndInit,
-	translateFromChineseKey,
 	handleMultiTranslateFromChineseKey,
 	handleReadStream,
 	handleAnalystics,
@@ -412,29 +411,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			})
 		);
 
-		// // 监听命令-批量中文转译
-		// context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-		// 	'extension.du.i18n.multiTranslateFromChineseKey', 
-		// 	async function () {
-		// 		// console.log("vscode 批量中文转译")
-		// 		const transSourceObj = deyi.getTransSourceObj();
-		// 		const handleTranslate = async () => {
-		// 			// console.log("transSourceObj", transSourceObj);
-		// 			const selectFolder = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, });
-		// 			// console.log("selectFolder", selectFolder);
-		// 			if (!selectFolder || !selectFolder[0] || !selectFolder[0].path) {return;}
-		// 			const translateLangs = deyi.getTranslateLangs();
-		// 			handleMultiTranslateFromChineseKey(selectFolder[0].path, transSourceObj, translateLangs);
-		// 		};
-		// 		if (isEmpty(transSourceObj)) {
-		// 			deyi.setTransSourceObj(() => handleTranslate());
-		// 		} else {
-		// 			handleTranslate();
-		// 		}
-		// 	})
-		// );
-
-		// 监听命令-设置多语言配置
 		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
 			'extension.du.i18n.setting', 
 			async function () {
