@@ -412,6 +412,19 @@ export class DEYI {
     return true;
   }
 
+  /**
+   * 判断是否有本地翻译源
+   * @returns 
+   */
+  async hasLocalTransSource() {
+    if (!isEmpty(this.transSourceObj)) return true;
+    const files = await getFiles(this.transSourcePaths);
+    if (isEmpty(files)) return false;
+    // 检查是否有文件以 .json 结尾
+    const jsonFiles = files.filter(file => path.extname(file) === '.json');
+    return !!jsonFiles.length;
+  }
+
   // 设置翻译源文案
   async setTransSourceObj(cb: Function, isCheck: boolean = true) {
     let sourceData = {};

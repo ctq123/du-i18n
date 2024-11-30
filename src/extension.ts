@@ -361,7 +361,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-成功",
 						// });
 					};
-					if (deyi.isOnline()) {// 在线
+					if (deyi.isOnline() || deyi.hasLocalTransSource()) {// 在线
 						const transSourceObj = deyi.getTransSourceObj();
 						// console.log('transSourceObj', transSourceObj);
 						if (isEmpty(transSourceObj)) {
