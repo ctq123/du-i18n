@@ -40,8 +40,10 @@ export class DEYI {
   private isOnlineTrans: boolean;
   private baiduAppid: string;
   private baiduSecrectKey: string;
-  private fileReg: any;
-  private jsonReg: any;
+  private fileReg: RegExp;
+  private jsonReg: RegExp;
+  private vueReg: RegExp;
+  private vueAndReactReg: RegExp;
 
   constructor(props: any = {}) {
     this.configFilePath = `/du-i18n.config.json`;// du-i18n配置文件
@@ -77,6 +79,8 @@ export class DEYI {
 
     this.fileReg = /\.(ts|js|tsx|jsx|vue|html)$/;
     this.jsonReg = /\.(json)$/;
+    this.vueReg = /\.(vue)$/;
+    this.vueAndReactReg = /\.(vue|tsx|jsx)$/;
   }
   async readConfig() {
     const files = await getFiles('**' + this.configFilePath);
@@ -93,7 +97,8 @@ export class DEYI {
               bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys, 
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
-              isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey
+              isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
+              vueReg, vueAndReactReg,
             } = config || {};
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
@@ -110,7 +115,6 @@ export class DEYI {
             this.tempFileName = tempFileName || this.tempFileName;
             this.isOverWriteLocal = !!isOverWriteLocal || this.isOverWriteLocal;
             this.uncheckMissKeys = Array.isArray(uncheckMissKeys) && uncheckMissKeys.length ? uncheckMissKeys : this.uncheckMissKeys;
-            this.fileReg = fileReg || this.fileReg;
             this.isNeedRandSuffix = typeof isNeedRandSuffix === 'boolean' ? isNeedRandSuffix : this.isNeedRandSuffix;
             this.langPaths = langPaths || this.langPaths;
             this.isSingleQuote = typeof isSingleQuote === 'boolean' ? isSingleQuote : this.isSingleQuote;
@@ -118,6 +122,10 @@ export class DEYI {
             this.baiduAppid = baiduAppid || this.baiduAppid;
             this.baiduSecrectKey = baiduSecrectKey || this.baiduSecrectKey;
             this.prefixKey = typeof prefixKey === 'string' ? prefixKey : this.prefixKey;
+
+            this.fileReg = fileReg || this.fileReg;
+            this.vueReg = vueReg || this.vueReg;
+            this.vueAndReactReg = vueAndReactReg || this.vueAndReactReg;
           }
         } catch(e) {
           console.error(e);
@@ -140,6 +148,7 @@ export class DEYI {
       uncheckMissKeys: this.uncheckMissKeys,
       isSingleQuote: this.isSingleQuote,
       isOnlineTrans: this.isOnlineTrans,
+      vueReg: this.vueReg,
       baiduAppid: this.baiduAppid,
       baiduSecrectKey: this.baiduSecrectKey,
     };
@@ -452,7 +461,6 @@ export class DEYI {
       if (files.length) {
         result = {};
         const defaultKeyObj = {};
-        // if (this.isOnline()) {
         //   // 更新在线全局语言
         //   await this.getOnlineLanguage('', true);
         //   // 检测在线翻译情况
@@ -485,17 +493,7 @@ export class DEYI {
         //                     defaultKeyObj[defaultLangObj[k]] = defaultLangObj[k];
         //                   }
         //                 }
-        //               });
-        //             }
-        //           });
-        //           if (!isEmpty(newObj)) {
-        //             result[fileName] = newObj;
-        //           }
-        //         }
-        //       }
-        //     }
-        //   });
-        // } else {
+  
           // 检测本地翻译情况
           files.forEach(({ fsPath }) => {
             const fileName = path.basename(fsPath);
@@ -662,7 +660,7 @@ export class DEYI {
           const moduleObj = {};
           const existObj = {};
           files.forEach(({ fsPath }) => {
-            if (/\.(vue|jsx|tsx)$/.test(fsPath)) {
+            if (this.vueAndReactReg.test(fsPath)) {
               const pageEnName = this.generatePageEnName(fsPath);
               const key = this.getPrefixKey(fsPath);
               if (!existObj[key]) {
@@ -797,78 +795,6 @@ export class DEYI {
     }
   }
 
-  // getI18NParams(filePath: string, repeatObj: any = null) {
-  //   const pageEnName = this.generatePageEnName(filePath);
-  //   console.log("pageEnName", pageEnName);
-  //   const basePrefix = this.getBasePrefix(pageEnName);
-  //   const secondPrefix = this.getKeyPrefix(filePath);
-  //   const i18nLangObj = this.getLocalPageWords(filePath);
-  //   if (!this.checkProjectConfig()) {// 校验当前配置
-  //     return null;
-  //   }
-  //   if (!isEmpty(i18nLangObj) && basePrefix) {
-  //     let params = {
-  //       packageName: this.projectName,
-  //       version: this.version,
-  //       pageEnName,
-  //       items: [],
-  //     };
-  //     const zhObj = i18nLangObj[this.defaultLang];
-  //     const items = [];
-  //     if (zhObj) {
-  //       Object.entries(zhObj).forEach(([k, v]) => {
-  //         let displayKey = '';
-  //         if ((k || '').startsWith(`${this.projectShortName}_`)) {
-  //           displayKey = k;
-  //         } else {
-  //           displayKey = basePrefix;
-  //           // console.log("secondPrefix", k, secondPrefix);
-  //           if (secondPrefix && k && !k.includes(secondPrefix)) {
-  //             // console.log("secondPrefix2", k, secondPrefix);
-  //             displayKey += secondPrefix;
-  //             // if (repeatObj && repeatObj[pageEnName]) {
-  //             //   const index = repeatObj[pageEnName].findIndex(({ fsPath }) => fsPath === filePath);
-  //             //   if (index > -1) {
-  //             //     displayKey += `${index}.`;
-  //             //   }
-  //             // }
-  //           }
-  //           displayKey += k;
-  //         }
-  //         const item = {
-  //           displayKey,
-  //           originKey: k,
-  //           content: v,
-  //           subscribeType: [2],
-  //           lines: [],
-  //         };
-  //         const liensItem = {
-  //           lineCode: this.defaultLang,
-  //           content: v
-  //         };
-  //         item.lines.push(liensItem);
-  //         items.push(item);
-  //       });
-
-  //       Object.entries(i18nLangObj).forEach(([lang, langObj]) => {
-  //         if (lang !== this.defaultLang) {
-  //           Object.entries(langObj).forEach(([k, v], i) => {
-  //             const liensItem = {
-  //               lineCode: lang,
-  //               content: v
-  //             };
-  //             items[i].lines.push(liensItem);
-  //           });
-  //         }
-  //       });
-  //       params.items = items;
-  //       console.log("getI18NParams", params);
-  //       return params;
-  //     }
-  //   }
-  //   return null;
-  // }
-
   async handleUploadWords(params: any, cb: Function) {
     try {
       if (params) {
@@ -907,79 +833,6 @@ export class DEYI {
       return null;
     }
   }
-
-  // async handleSingleAdd(filePath: string, repeatObj: any = null) {
-  //   try {
-  //     const params = this.getI18NParams(filePath, repeatObj);
-  //     if (params) {
-  //       const limitNum = 100;
-  //       const { items=[] } = params;
-  //       let itemList = [];
-  //       let keyMap = {};// 本地key与平台key的映射关系
-  //       items.forEach(({ originKey:k, displayKey:v }) => {
-  //         if (k !== v) {
-  //           keyMap[k] = v;
-  //         }
-  //       });
-  //       if (isEmpty(keyMap)) { return; }// 没有新增
-  //       for(let i = 0; i < items.length; i+= limitNum) {
-  //         itemList.push(items.slice(i, i+limitNum));
-  //       }
-  //       if (itemList.length && this.onlineApiUrl) {
-  //         // console.log("itemList", itemList);
-  //         const taskList = itemList.reduce((pre, cur, i) => {
-  //           let url = this.onlineApiUrl + '/batch-add';
-  //           const newParams = {
-  //             ...params,
-  //             items: cur || []
-  //           };
-  //           const task = this.request(url, newParams, 'post');
-  //           pre.push(task);
-  //           return pre;
-  //         }, []);
-  //         const res = await Promise.all(taskList);
-  //         console.log("res1", res);
-  //         const res2:any = await this.queryPageWords(filePath, params.pageEnName);
-  //         if (res2.code === 200 && res2.data) {
-  //           console.log("res2", res2);
-  //           if (Array.isArray(res2.data)) {
-  //             const { content } = res2.data[0] || {};
-  //             await this.replaceLocalI18N(filePath, content, keyMap);
-  //           }
-  //         }
-  //         {return res;}
-  //       }
-  //     }
-  //   } catch(e) {
-  //     console.error(e);
-  //     return null;
-  //   }
-  // }
-
-  // async handleBatchAdd(selectFolderPath: any) {
-  //   try {
-  //     if (!selectFolderPath) {return;}
-  //     // const repeat: any = await this.searchRepeatFilesPath(selectFolderPath);
-  //     // const repeatObj = repeat.moduleObj || null;
-  //     const folderPaths = selectFolderPath.split(path.sep);
-  //     // console.log("folderPaths", folderPaths);
-  //     const len = folderPaths.length;
-  //     if (len) {
-  //       let folderUrl = folderPaths[len - 1];
-  //       if (folderPaths.includes('src')) {
-  //         folderUrl = folderPaths.slice(folderPaths.indexOf('src')).join(path.sep);
-  //       }
-  //       folderUrl = '**' + path.sep + folderUrl + path.sep + '**';;
-  //       const files = await getFiles(folderUrl);
-  //       // console.log("files", files);
-  //       for(let file of files) {
-  //         await this.handleSingleAdd(file.fsPath);
-  //       }
-  //     }
-  //   } catch(e) {
-  //     console.error("handleBatchAdd e", e);
-  //   }
-  // }
 
   async queryPageWords(pageEnName: string, callback: Function = null) {
     const params = {
