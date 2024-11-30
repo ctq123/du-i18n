@@ -8,6 +8,7 @@ v14.17.3
 https://registry.npmmirror.com
 ```
 
+
 # 二、国际多语言本地开发解决方案
 ### 1. 介绍
 ![image](https://github.com/user-attachments/assets/f7057f15-bd23-484b-b6d0-62fa4cae5caa)
@@ -15,6 +16,7 @@ https://registry.npmmirror.com
 
 ![image](https://github.com/user-attachments/assets/103bef41-b417-44bc-88ea-52a9ad8aa2af)
 
+项目开源地址：https://github.com/ctq123/du-i18n
 
 ### 2. 功能
 - 支持文案回显
