@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { 
+import {
   isIncludePath,
   getFiles,
   getBaseFilePath,
@@ -73,7 +73,7 @@ export class DEYI {
     this.isSingleQuote = true;// key的引用是单引号还是双引号，默认是单引号
     this.prefixKey = null;// key前缀
     this.keyJoinStr = null; // key连接符
-    
+
     this.isOnlineTrans = true;// 本地-是否支持在线翻译
     this.baiduAppid = '';// 百度翻译appid
     this.baiduSecrectKey = '';// 百度翻译密钥
@@ -92,11 +92,11 @@ export class DEYI {
           if (data) {
             const config = eval(`(${data})`);
             // console.log("config", config);
-            const { 
-              projectName, projectShortName, onlineApiUrl, version, multiFolders, 
-              bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys, 
-              transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys, 
-              fileReg, isNeedRandSuffix, langPaths, isSingleQuote, 
+            const {
+              projectName, projectShortName, onlineApiUrl, version, multiFolders,
+              bigFileLineCount, pullLangs, tempLangs, defaultLang, quoteKeys,
+              transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys,
+              fileReg, isNeedRandSuffix, langPaths, isSingleQuote,
               isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
               vueAndReactReg, keyJoinStr,
             } = config || {};
@@ -127,7 +127,7 @@ export class DEYI {
             this.fileReg = fileReg || this.fileReg;
             this.vueAndReactReg = vueAndReactReg || this.vueAndReactReg;
           }
-        } catch(e) {
+        } catch (e) {
           console.error(e);
         }
       }
@@ -152,7 +152,7 @@ export class DEYI {
       tempFileName: this.tempFileName,
       // 复杂文件夹
       multiFolders: this.multiFolders,
-      // key前缀
+      // key前缀，默认为null，前两层文件名如'base.index.'
       prefixKey: this.prefixKey,
       // key连接符，默认null为'.'
       keyJoinStr: this.keyJoinStr,
@@ -276,7 +276,7 @@ export class DEYI {
   getIsSingleQuote() {
     return this.isSingleQuote;
   }
-  
+
   /**
    * 是否支持本地在线翻译，如百度翻译，默认支持
    * @returns 
@@ -327,7 +327,7 @@ export class DEYI {
                   });
                 }
               }
-            } catch(e) {
+            } catch (e) {
               console.error(e);
             }
           }
@@ -352,13 +352,13 @@ export class DEYI {
                   });
                 }
               }
-            } catch(e) {
+            } catch (e) {
               console.error(e);
             }
           }
         });
       }
-    } catch(e) {
+    } catch (e) {
       console.error("readLocalGlobalLangObj", e);
     }
   }
@@ -475,51 +475,51 @@ export class DEYI {
       const files = await getFiles(this.tempPaths);
       if (files.length) {
         result = {};
-        const defaultKeyObj = {};    
+        const defaultKeyObj = {};
         // 检测本地翻译情况
-          files.forEach(({ fsPath }) => {
-            const fileName = path.basename(fsPath);
-            if (/\.(json)$/.test(fileName)) {
-              const data = fs.readFileSync(fsPath, 'utf-8');
-              if (data) {
-                const langObj = eval(`(${data})`);
-                if (!isEmpty(langObj)) {
-                  const newObj: any = {};
-                  const defaultLang = this.defaultLang;
-                  const defaultLangObj = langObj[defaultLang] || {};
-                  Object.entries(langObj).forEach(([lang, obj]) => {
-                    if (lang !== defaultLang) {
-                      Object.entries(obj).forEach(([k, v]) => {
-                        if (!this.uncheckMissKeys.includes(k)) {
-                          if (!v) {// 缺少翻译
-                            if (!newObj[defaultLang]) {
-                              newObj[defaultLang] = {};
-                            }
-                            if (!newObj[lang]) {
-                              newObj[lang] = {};
-                            }
-                            newObj[defaultLang][k] = defaultLangObj[k];
-                            newObj[lang][k] = v;
-                            defaultKeyObj[defaultLangObj[k]] = defaultLangObj[k];
+        files.forEach(({ fsPath }) => {
+          const fileName = path.basename(fsPath);
+          if (/\.(json)$/.test(fileName)) {
+            const data = fs.readFileSync(fsPath, 'utf-8');
+            if (data) {
+              const langObj = eval(`(${data})`);
+              if (!isEmpty(langObj)) {
+                const newObj: any = {};
+                const defaultLang = this.defaultLang;
+                const defaultLangObj = langObj[defaultLang] || {};
+                Object.entries(langObj).forEach(([lang, obj]) => {
+                  if (lang !== defaultLang) {
+                    Object.entries(obj).forEach(([k, v]) => {
+                      if (!this.uncheckMissKeys.includes(k)) {
+                        if (!v) {// 缺少翻译
+                          if (!newObj[defaultLang]) {
+                            newObj[defaultLang] = {};
                           }
+                          if (!newObj[lang]) {
+                            newObj[lang] = {};
+                          }
+                          newObj[defaultLang][k] = defaultLangObj[k];
+                          newObj[lang][k] = v;
+                          defaultKeyObj[defaultLangObj[k]] = defaultLangObj[k];
                         }
-                      });
-                    }
-                  });
-                  if (!isEmpty(newObj)) {
-                    result[fileName] = newObj;
+                      }
+                    });
                   }
+                });
+                if (!isEmpty(newObj)) {
+                  result[fileName] = newObj;
                 }
               }
             }
-          });
+          }
+        });
         // }
 
         if (!isEmpty(defaultKeyObj)) {
           result['missTranslateKeys'] = Object.keys(defaultKeyObj);
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.error("readLocalGlobalLangObj", e);
     }
     return result;
@@ -540,7 +540,7 @@ export class DEYI {
         let dirName = path.dirname(filePath);
         let curDir = dirName.split(path.sep).slice(-1)[0];
         let lastDir = curDir;
-        while(dirName && curDir && !this.multiFolders.includes(curDir)) {
+        while (dirName && curDir && !this.multiFolders.includes(curDir)) {
           lastDir = curDir;
           const arr = dirName.split(path.sep);
           dirName = arr.slice(0, -1).join(path.sep);
@@ -567,7 +567,7 @@ export class DEYI {
     dirName = dirName.split(path.sep).slice(-1)[0];
     let fileName = path.basename(filePath);
     fileName = fileName.split('.')[0];
-    let key = typeof this.prefixKey === 'string' ? this.prefixKey : `${dirName}.${fileName}`;
+    let key = typeof this.prefixKey === 'string' ? this.prefixKey : (this.keyJoinStr !== null ? `${dirName}${this.keyJoinStr}${fileName}` : `${dirName}.${fileName}`);
     const rand = Date.now().toString().substr(-5);
     const rand2 = index || Math.floor(Math.random() * 10);
     return this.keyJoinStr !== null ? `${key}${this.keyJoinStr}${rand}${rand2}${this.keyJoinStr}` : `${key}.${rand}${rand2}-`;
@@ -604,7 +604,7 @@ export class DEYI {
       unTranslateLangObj[fromLang] = fromLangMap;
       unTranslateLangObj[toLang] = toLangMap;
       return unTranslateLangObj;
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       return null;
     }
@@ -615,22 +615,22 @@ export class DEYI {
     const pathName = (this.tempPaths || '').replace(/\*/g, '');
     if (pathName && fsPath && isIncludePath(fsPath, pathName) && this.isOnline()) {
       const fileName = path.basename(fsPath);
-        // 命名规范
-        let pageEnName = fileName.split('_')[0];
-        if (/\.(json)$/.test(fileName)) {
-          if (pageEnName.includes('.json')) {
-            pageEnName = pageEnName.replace('.json', '');
-          }
-          try {
-            const data = fs.readFileSync(fsPath, 'utf-8');
-            if (data) {
-              const i18nLangObj = eval(`(${data})`);
-              this.handleSendToOnline(i18nLangObj, pageEnName, cb);
-            }
-          } catch(e) {
-            console.error(e);
-          }
+      // 命名规范
+      let pageEnName = fileName.split('_')[0];
+      if (/\.(json)$/.test(fileName)) {
+        if (pageEnName.includes('.json')) {
+          pageEnName = pageEnName.replace('.json', '');
         }
+        try {
+          const data = fs.readFileSync(fsPath, 'utf-8');
+          if (data) {
+            const i18nLangObj = eval(`(${data})`);
+            this.handleSendToOnline(i18nLangObj, pageEnName, cb);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
     } else {
       return vscode.window.showWarningMessage(`请在文件目录${this.tempPaths}下执行该命令`);
     }
@@ -657,7 +657,7 @@ export class DEYI {
               const i18nLangObj = eval(`(${data})`);
               this.handleSendToOnline(i18nLangObj, pageEnName, cb);
             }
-          } catch(e) {
+          } catch (e) {
             console.error(e);
           }
         }
@@ -696,7 +696,7 @@ export class DEYI {
             item.lines.push(liensItem);
             items.push(item);
           });
-  
+
           Object.entries(i18nLangObj).forEach(([lang, langObj]) => {
             if (lang !== this.defaultLang) {
               Object.entries(langObj).forEach(([k, v], i) => {
@@ -715,7 +715,7 @@ export class DEYI {
           });
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
     }
   }
@@ -724,10 +724,10 @@ export class DEYI {
     try {
       if (params) {
         const limitNum = 100;
-        const { items=[] } = params;
+        const { items = [] } = params;
         let itemList = [];
-        for(let i = 0; i < items.length; i+= limitNum) {
-          itemList.push(items.slice(i, i+limitNum));
+        for (let i = 0; i < items.length; i += limitNum) {
+          itemList.push(items.slice(i, i + limitNum));
         }
         if (itemList.length && this.onlineApiUrl) {
           // console.log("itemList", itemList);
@@ -743,7 +743,7 @@ export class DEYI {
           }, []);
           const res = await Promise.all(taskList);
           console.log("res1", res);
-          const res2:any = await this.queryPageWords(params.pageEnName);
+          const res2: any = await this.queryPageWords(params.pageEnName);
           if (res2.code === 200 && res2.data) {
             console.log("res2", res2);
             if (Array.isArray(res2.data)) {
@@ -753,7 +753,7 @@ export class DEYI {
           }
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       return null;
     }
@@ -776,7 +776,7 @@ export class DEYI {
 
   // 查询在线文案
   async queryLangWords(lang: string, isAll: boolean) {
-    const requestSingleLang = async (areaLang, isInit=false) => {
+    const requestSingleLang = async (areaLang, isInit = false) => {
       const params = {
         projectCode: this.projectName,
         version: this.version,
@@ -787,7 +787,7 @@ export class DEYI {
       if (this.projectName && this.onlineApiUrl) {
         const url = this.onlineApiUrl + '/query-by-package';
         // console.log("url", url);
-        const { data=null }: any = await this.request(url, params);
+        const { data = null }: any = await this.request(url, params);
         console.log("data", data);
         if (data) {
           // 默认拉取所有语言，用户也可配置拉取制定的语言集合this.pullLangs
@@ -796,7 +796,7 @@ export class DEYI {
             // 重新设置语言keys
             this.tempLangs = data.areaLangs.map(item => item.code);
             if (isAll) {
-              for(let item of data.areaLangs) {
+              for (let item of data.areaLangs) {
                 if (Array.isArray(this.pullLangs) && this.pullLangs.length) {
                   if (this.pullLangs.includes(item.code)) {
                     await requestSingleLang(item.code);
@@ -852,7 +852,7 @@ export class DEYI {
       }
     });
   }
-  
+
   async init(context: vscode.ExtensionContext, cb: Function) {
     // 读取配置并设置
     await this.readConfig();
