@@ -641,12 +641,6 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "上传文案-外部",
 						// });
 					}
-					// const activeEditor = vscode.window.activeTextEditor;
-					// if (activeEditor) {
-					// 	const { fileName } = activeEditor.document || {};
-					// 	const res = await deyi.handleSingleAdd(fileName);
-					// 	console.log("handleSingleAdd", res);
-					// 	handleRefresh();
 				}
 			})
 		);
