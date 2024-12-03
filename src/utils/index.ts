@@ -748,7 +748,7 @@ export function getI18NObject(data: string) {
  * @returns 
  */
 function isInRange(i: number, list: Array<any[]>) {
-  if (!list.length) return false;
+  if (!list.length) {return false;}
 
   list.sort((a, b) => a[0] - b[0]);
 
@@ -1129,129 +1129,113 @@ export function getBitCount(str: string) {
 
 // 调用百度翻译-同步翻译文件
 // https://fanyi-api.baidu.com/doc/21
-export async function getTransSourceObjByBaidu(fsPath: string, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, isOverWriteLocal: boolean = false) {
+export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, isOverWriteLocal: boolean = false) {
+  if (isEmpty(localLangObj)) {return null;}
   const transSourceObj = {};
-  if (/\.(json)$/.test(fsPath)) {
-    const data = fs.readFileSync(fsPath, 'utf-8');
-    if (data) {
-      const localLangObj = eval(`(${data})`);
-      if (localLangObj) {
-        const defaultSource = localLangObj[defaultLang];
-        if (!isEmpty(defaultSource)) {
-          const nt = '<br>';
-          // 获取源文案
-          Object.entries(localLangObj).map(([lang, obj]) => {
-            if (lang !== defaultLang) {
-              if (!transSourceObj[lang]) {
-                transSourceObj[lang] = {};
-              }
-              Object.keys(obj).forEach((k) => {
-                if (!obj[k]) {
-                  const keyStr = defaultSource[k];
-                  if (keyStr) {// 有翻译源文案
-                    transSourceObj[lang][keyStr] = obj[k];
-                  }
-                }
-              });
-            }
-          });
-
-          const getTransText = (obj: any = {}, max: number = 6000) => {
-            const text = Object.keys(obj).map((v: string, i: number) => {
-              if (i < max) {
-                return (v || '').toString().replace(/\n/g, nt);
-              }
-              return null;
-            }).filter(v => v !== null).join('\n');
-            const bitLen = getBitCount(text);
-            if (bitLen > max) {
-              const len = Object.keys(obj).length;
-              return getTransText(obj, len / 2);
-            } else {
-              return text;
-            }
-          };
-          
-          const langs = Object.keys(transSourceObj);
-          // 判断超长
-          if (!baiduAppid || !baiduSecrectKey) {
-            let count = 0;
-            for(let lang of langs) {
-              const text2 = getTransText(transSourceObj[lang]);
-              count += getBitCount(text2);
-            }
-            if (count > 1000) {
-              vscode.window.showWarningMessage(`翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
-              // // 记录用户行为数据
-							// reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-							// 	action: "在线翻译-外部",
-              //   count: `字节数${count}`,
-							// 	error: `翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`
-							// });
-              return null;
-            }
-          }
-          
-          const task = async (lang: string, timeout: number) => {
-            return new Promise(async (resolve, reject) => {
-              try {
-                const q = getTransText(transSourceObj[lang]);
-                if (!q) {
-                  vscode.window.showWarningMessage(`${defaultLang}的源文案不能为空！`);
-                  // // 记录用户行为数据
-                  // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-                  //   action: "在线翻译-外部",
-                  //   error: `${defaultLang}的源文案不能为空！`
-                  // });
-                  resolve(null);
-                }
-                const params = {
-                  from: defaultLang,
-                  to: lang,
-                  q,
-                  baiduAppid, 
-                  baiduSecrectKey,
-                };
-                console.log('params', params);
-                const data = await Baidu.getTranslate(params);
-                console.log("baidu data", data);
-                if (data && Array.isArray(data.trans_result)) {
-                  data.trans_result.forEach(item => {
-                    let key = item.src;
-                    if (key) {
-                      key = key.replaceAll(nt, '\n');
-                      transSourceObj[lang][key] = item.dst;
-                    }
-                  });
-                }
-                if (timeout) {
-                  setTimeout(() => resolve(transSourceObj), timeout);
-                } else {
-                  resolve(transSourceObj);
-                }
-              } catch(e) {
-                // // 记录用户行为数据
-                // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-                //   action: "在线翻译-外部-异常",
-                //   error: e,
-                // });
-                reject(e);
-              }
-            });
-          };
-          for(let lang of langs) {
-            if (langs.length === 1) {
-              await task(lang, 0);
-            } else {
-              await task(lang, 1000);
-            }
-          }
-          return transSourceObj;
-        }
+  const defaultSource = localLangObj[defaultLang];
+  if (isEmpty(defaultSource)) {return null;}
+  const nt = '<br>';
+  // 获取源文案
+  Object.entries(localLangObj).map(([lang, obj]) => {
+    if (lang !== defaultLang) {
+      if (!transSourceObj[lang]) {
+        transSourceObj[lang] = {};
       }
+      Object.keys(obj).forEach((k) => {
+        if (!obj[k]) {
+          const keyStr = defaultSource[k];
+          if (keyStr) {// 有翻译源文案
+            transSourceObj[lang][keyStr] = obj[k];
+          }
+        }
+      });
+    }
+  });
+
+  const getTransText = (obj: any = {}, max: number = 6000) => {
+    const text = Object.keys(obj).map((v: string, i: number) => {
+      if (i < max) {
+        return (v || '').toString().replace(/\n/g, nt);
+      }
+      return null;
+    }).filter(v => v !== null).join('\n');
+    const bitLen = getBitCount(text);
+    if (bitLen > max) {
+      const len = Object.keys(obj).length;
+      return getTransText(obj, len / 2);
+    } else {
+      return text;
+    }
+  };
+  
+  const langs = Object.keys(transSourceObj);
+  // 判断超长
+  if (!baiduAppid || !baiduSecrectKey) {
+    let count = 0;
+    for(let lang of langs) {
+      const text2 = getTransText(transSourceObj[lang]);
+      count += getBitCount(text2);
+    }
+    if (count > 1000) {
+      vscode.window.showWarningMessage(`翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
+      // // 记录用户行为数据
+      // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+      // 	action: "在线翻译-外部",
+      //   count: `字节数${count}`,
+      // 	error: `翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`
+      // });
+      return null;
     }
   }
-  return null;
+  
+  const task = async (lang: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const q = getTransText(transSourceObj[lang]);
+        if (!q) {
+          vscode.window.showWarningMessage(`${defaultLang}的源文案不能为空！`);
+          reject(null);
+        }
+        const params = {
+          from: defaultLang,
+          to: lang,
+          q,
+          baiduAppid, 
+          baiduSecrectKey,
+        };
+        console.log('params', params);
+        const data = await Baidu.getTranslate(params);
+        console.log("baidu data", data);
+        if (data && Array.isArray(data.trans_result)) {
+          data.trans_result.forEach(item => {
+            let key = item.src;
+            if (key) {
+              key = key.replaceAll(nt, '\n');
+              transSourceObj[lang][key] = item.dst;
+            }
+          });
+          resolve(transSourceObj);
+        } else {
+          throw new Error(data.error_code);
+        }
+      } catch(e) {
+        // // 记录用户行为数据
+        // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+        //   action: "在线翻译-外部-异常",
+        //   error: e,
+        // });
+        reject(e);
+      }
+    });
+  };
+  const taskList = langs.map(lang => () => task(lang));
+  try {
+    await limitedParallelRequests(taskList, 1);
+    return transSourceObj;
+  } catch(e) {
+    console.log('limitedParallelRequests', e);
+    return null;
+  }
 }
 
 /**
@@ -1464,4 +1448,31 @@ export function isIncludePath(papa: string, child: string) {
   const childDirs = child.replace(/\//g, path.sep);
 
   return papaDirs.includes(childDirs);
+}
+
+export async function limitedParallelRequests<T>(
+  requests: (() => Promise<T>)[], // 请求函数数组
+  maxConcurrency: number // 最大并发请求数
+): Promise<T[]> {
+  const results: T[] = [];
+  const executing: Promise<number>[] = []; // 当前执行中的请求
+
+  for (const request of requests) {
+    const task = request().then(result => results.push(result)); // 执行请求并保存结果
+
+    executing.push(task);
+
+    // 限制并发请求数
+    if (executing.length >= maxConcurrency) {
+      // 等待最早的请求完成
+      await Promise.race(executing);
+      // 移除已经完成的请求
+      executing.splice(executing.findIndex(p => p === task), 1);
+    }
+  }
+
+  // 等待所有请求完成
+  await Promise.all(executing);
+
+  return results;
 }

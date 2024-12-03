@@ -23,6 +23,7 @@ import {
 	getTransSourceObjByBaidu,
 	isIncludePath,
 	getProjectInfo,
+	limitedParallelRequests,
 } from './utils';
 import { DEYI } from './utils/deyi';
 const fs = require('fs');
@@ -393,8 +394,12 @@ export async function activate(context: vscode.ExtensionContext) {
 							if (fileName && isIncludePath(fileName, tempPathName) && /\.(json)$/.test(fileName)) {
 								const baiduAppid = deyi.getBaiduAppid();
 								const baiduSecrectKey = deyi.getBaiduSecrectKey();
+								if (!/\.(json)$/.test(fileName)) {return;}
+								const data = fs.readFileSync(fileName, 'utf-8');
+								if (!data) {return;}
+								const localLangObj = eval(`(${data})`);
 								// 调用百度翻译
-								const transSourceObj = await getTransSourceObjByBaidu(fileName, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
+								const transSourceObj = await getTransSourceObjByBaidu(localLangObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
 								// console.log('transSourceObj', transSourceObj);
 								if (!isEmpty(transSourceObj)) {
 									handleTranslate(transSourceObj, fileName);
@@ -421,6 +426,83 @@ export async function activate(context: vscode.ExtensionContext) {
 			})
 		);
 
+		// 监听命令-批量在线翻译
+		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
+			'extension.du.i18n.multiTranslateFromChineseKey', 
+			async function () {
+				try {
+					// console.log("vscode 中文转译")
+					const langKey = userKey || deyi.getDefaultLang();
+					const tempPaths = deyi.getTempPaths();
+					const isOverWriteLocal = deyi.getIsOverWriteLocal();
+
+					const handleTranslate = async (sourObj: any = {}, filePath: string = '') => {
+						// console.log("transSourceObj", transSourceObj);
+						await translateLocalFile(sourObj, langKey, tempPaths, filePath, isOverWriteLocal);
+						if (!deyi.isOnline()) {
+							await deyi.refreshGlobalLangObj();
+						}
+					};
+					if (deyi.isOnline()) {
+						const transSourceObj = deyi.getTransSourceObj();
+						// console.log('transSourceObj', transSourceObj);
+						if (isEmpty(transSourceObj)) {
+							await deyi.setTransSourceObj((data) => {
+								handleTranslate(data);
+							});
+						} else {
+							handleTranslate(transSourceObj);
+						}
+						// // 记录用户行为数据
+						// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
+						// 	action: "在线翻译-内部",
+						// });
+					} else {// 批量调用百度翻译
+						const baiduAppid = deyi.getBaiduAppid();
+						const baiduSecrectKey = deyi.getBaiduSecrectKey();
+						if (!baiduAppid || !baiduSecrectKey) {
+							vscode.window.showWarningMessage(`批量翻译，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
+							return;
+						}
+
+						// 返回没有翻译的文件集合
+						const resultObj: any = await deyi.handleMissingDetection('filePath');
+
+						const requestList = Object.entries(resultObj).map(([key, value]) => {
+						  const fileName = key;
+						  const transObj = value;
+							const task = async () => {
+									// 调用百度翻译
+									try {
+										const transSourceObj = await getTransSourceObjByBaidu(transObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
+										if (!isEmpty(transSourceObj)) {
+											handleTranslate(transSourceObj, fileName);
+											return { code: 200, transSourceObj };
+										} else {
+											return { code: 500, message: '翻译失败' };
+										}
+									} catch(e) {
+										console.error('e', e);
+										return { code: 500, message: e.message };
+									}
+							};
+							return task;
+						});
+						
+						limitedParallelRequests(requestList, 1).then((result) => {
+							console.log('result', result);
+							if (Array.isArray(result) && result.every(item => item.code === 200)) {
+								vscode.window.showInformationMessage(`翻译完成，请检查文件`);
+							}
+						});
+					}
+				} catch(e) {
+					console.error('e', e);
+				}
+			})
+		);
+
+		// 设置
 		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
 			'extension.du.i18n.setting', 
 			async function () {

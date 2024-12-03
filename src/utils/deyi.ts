@@ -473,8 +473,12 @@ export class DEYI {
     cb(sourceData);
   }
 
-  // 翻译漏检
-  async handleMissingDetection() {
+  /**
+   * 翻译漏检
+   * @param type 类型 fileName|filePath
+   * @returns 
+   */
+  async handleMissingDetection(type: string = 'fileName') {
     let result = null;
     try {
       const files = await getFiles(this.tempPaths);
@@ -505,27 +509,32 @@ export class DEYI {
                           }
                           newObj[defaultLang][k] = defaultLangObj[k];
                           newObj[lang][k] = v;
-                          defaultKeyObj[defaultLangObj[k]] = defaultLangObj[k];
+                          if (type === 'fileName') {
+                            defaultKeyObj[defaultLangObj[k]] = defaultLangObj[k];
+                          }
                         }
                       }
                     });
                   }
                 });
                 if (!isEmpty(newObj)) {
-                  result[fileName] = newObj;
+                  if (type === 'fileName') {
+                    result[fileName] = newObj;
+                  } else {
+                    result[fsPath] = newObj;
+                  }
                 }
               }
             }
           }
         });
-        // }
-
-        if (!isEmpty(defaultKeyObj)) {
+        
+        if (!isEmpty(defaultKeyObj) && type === 'fileName') {
           result['missTranslateKeys'] = Object.keys(defaultKeyObj);
         }
       }
     } catch (e) {
-      console.error("readLocalGlobalLangObj", e);
+      console.error("handleMissingDetection", e);
     }
     return result;
   }

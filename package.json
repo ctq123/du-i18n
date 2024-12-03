@@ -81,6 +81,10 @@
 				"title": "在线翻译"
 			},
 			{
+				"command": "extension.du.i18n.multiTranslateFromChineseKey",
+				"title": "批量在线翻译"
+			},
+			{
 				"command": "extension.du.i18n.updateLocalToOnline",
 				"title": "上传文案"
 			},
@@ -145,6 +149,10 @@
 				{
 					"command": "extension.du.i18n.updateLocalToOnline",
 					"group": "2_workspace@3"
+				},
+				{
+					"command": "extension.du.i18n.multiTranslateFromChineseKey",
+					"group": "3_compare@5"
 				},
 				{
 					"command": "extension.du.i18n.batchUpdateLocalToOnline",
