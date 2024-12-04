@@ -416,6 +416,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						}
 					}
 				} catch(e) {
+					console.error(e);
 					// // 记录用户行为数据
 					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
 					// 	action: "在线翻译-异常",
