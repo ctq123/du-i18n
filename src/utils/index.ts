@@ -214,19 +214,6 @@ export function handleScanFileInner(data: string, filePath: string) {
         urlPath = filePath;
         yamlObjList.push(YAML.parse(yamlStr));
       }
-      // discard: 废弃老的h5检测，先去掉耗性能
-      // while(res = i18nSrcReg.exec(data)) {// 可能存在多个的情况
-      //   count++;
-			// 	let url = res[1].replace(/["']/g, '');
-      //   // console.log("url2", url);
-      //   url = path.join(path.dirname(filePath), url);
-      //   const fileName = path.basename(url);
-		  //   const key = fileName.substring(0, fileName.indexOf('.'));
-      //   urlPath = url;
-      //   langFilePath[key] = url;
-      //   yamlStr = fs.readFileSync(url, 'utf-8');
-      //   yamlObjList.push(YAML.parse(yamlStr));
-      // }
 
 			if (count > 0) {// <i18n>在外部文件
         if (count === 1) {// 所有语言在一个文件
