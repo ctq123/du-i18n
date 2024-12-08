@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import MapCache from './cache';
 import * as Baidu from './baidu';
+import { MessageType, showMessage } from './message';
+import { message } from 'antd';
 const path = require('path');
 const fs = require('fs');
 const YAML = require('yaml');
@@ -76,9 +78,9 @@ export function replaceText(data: string, template: string, newText: string) {
 }
 
 // 写入流文件
-export function handleWriteStream(path: string, data: string, callback: Function) {
+export function handleWriteStream(filePath: string, data: string, callback: Function) {
   // 创建一个可以写入的流，写入到文件中
-  let writerStream = fs.createWriteStream(path);
+  let writerStream = fs.createWriteStream(filePath);
 
   // 使用 utf8 编码写入数据
   writerStream.write(data, 'UTF8');
@@ -98,11 +100,11 @@ export function handleWriteStream(path: string, data: string, callback: Function
 } 
 
 // 读取流文件
-export function handleReadStream(path: string, callback: Function) {
+export function handleReadStream(filePath: string, callback: Function) {
   let data = '';
 
   // 创建可读流
-  let readerStream = fs.createReadStream(path);
+  let readerStream = fs.createReadStream(filePath);
 
   // 设置编码为 utf8。
   readerStream.setEncoding('UTF8');
@@ -123,9 +125,9 @@ export function handleReadStream(path: string, callback: Function) {
 }
 
 // 同步写入json文件
-export function writeJsonFileSync(path: string, text: string) {
+export function writeJsonFileSync(filePath: string, text: string) {
   try {
-    const data = fs.readFileSync(path, 'utf-8');
+    const data = fs.readFileSync(filePath, 'utf-8');
     const index = data.lastIndexOf('}');
     if (index > -1) {
       // 判断前面是否需要添加逗号
@@ -139,7 +141,7 @@ export function writeJsonFileSync(path: string, text: string) {
       let arr = (newText || '').split('\n');
       newText = arr.map((c, i) => i < arr.length - 1 ? ('\t' + c) : c).join('\n');
       const newStr= data.slice(0, index) + newText + data.slice(index);
-      return writeFileToLine(path, newStr);
+      return writeFileToLine(filePath, newStr);
     }
     return false;
   } catch(e) {
@@ -149,13 +151,12 @@ export function writeJsonFileSync(path: string, text: string) {
 }
 
 // 同步写入yml文件
-export function writeYmlFileSync(path: string, key: string, text: string) {
+export function writeYmlFileSync(filePath: string, key: string, text: string) {
   try {
-    // console.log("path", path);
-    const data = fs.readFileSync(path, 'utf-8');
+    const data = fs.readFileSync(filePath, 'utf-8');
     if (data && key) {
       // 公司内部自定义的格式
-      if (/\.(vue)$/.test(path) && data.indexOf('</i18n>') > -1) {
+      if (/\.(vue)$/.test(filePath) && data.indexOf('</i18n>') > -1) {
         const startIndex = data.indexOf('<i18n>') + 6;
         const endIndex = data.indexOf('</i18n>', startIndex);
         const yamlStr = data.substring(startIndex, endIndex);
@@ -166,14 +167,14 @@ export function writeYmlFileSync(path: string, key: string, text: string) {
         yamlObj[key] = YAML.parse(keyStr);
         const newText = '\n' + YAML.stringify(yamlObj);
         const newStr= data.slice(0, startIndex) + newText + data.slice(endIndex);
-        return writeFileToLine(path, newStr);
+        return writeFileToLine(filePath, newStr);
       } else {
-        if (/\.(yaml|yml)$/.test(path)) {
+        if (/\.(yaml|yml)$/.test(filePath)) {
           const yamlObj = YAML.parse(data);
           const keyStr = YAML.stringify(yamlObj[key]) + text;
           yamlObj[key] = YAML.parse(keyStr);
           const newText = YAML.stringify(yamlObj);
-          return writeFileToLine(path, newText);
+          return writeFileToLine(filePath, newText);
         }
       }
     }
@@ -184,9 +185,9 @@ export function writeYmlFileSync(path: string, key: string, text: string) {
   }
 }
 
-export function writeFileToLine(path: string, str: string) {
+export function writeFileToLine(filePath: string, str: string) {
   try {
-    fs.writeFileSync(path, str);
+    fs.writeFileSync(filePath, str);
     return true;
   } catch(e) {
     console.error("writeFileToLine e", e);
@@ -1117,10 +1118,11 @@ export function getBitCount(str: string) {
 // 调用百度翻译-同步翻译文件
 // https://fanyi-api.baidu.com/doc/21
 export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang: string, baiduAppid: string, baiduSecrectKey: string, isOverWriteLocal: boolean = false) {
-  if (isEmpty(localLangObj)) {return null;}
   const transSourceObj = {};
+  const result = { transSourceObj: null, message: '' };
+  if (isEmpty(localLangObj)) {return result;}
   const defaultSource = localLangObj[defaultLang];
-  if (isEmpty(defaultSource)) {return null;}
+  if (isEmpty(defaultSource)) {return result;}
   const nt = '<br>';
   // 获取源文案
   Object.entries(localLangObj).map(([lang, obj]) => {
@@ -1164,14 +1166,14 @@ export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang
       count += getBitCount(text2);
     }
     if (count > 1000) {
-      vscode.window.showWarningMessage(`翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
       // // 记录用户行为数据
       // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
       // 	action: "在线翻译-外部",
       //   count: `字节数${count}`,
       // 	error: `翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`
       // });
-      return null;
+      result.message = `翻译文案过长，建议开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`;
+      return result;
     }
   }
   
@@ -1180,8 +1182,9 @@ export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang
       try {
         const q = getTransText(transSourceObj[lang]);
         if (!q) {
-          vscode.window.showWarningMessage(`${defaultLang}的源文案不能为空！`);
-          reject(null);
+          // showMessage(`${defaultLang}的源文案不能为空！`, MessageType.WARNING);
+          result.message = `${defaultLang}的源文案不能为空！`;
+          throw new Error(`${defaultLang}的源文案不能为空！`);
         }
         const params = {
           from: defaultLang,
@@ -1191,7 +1194,7 @@ export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang
           baiduSecrectKey,
         };
         console.log('params', params);
-        const data = await Baidu.getTranslate(params);
+        const { data, message } = await Baidu.getTranslate(params);
         console.log("baidu data", data);
         if (data && Array.isArray(data.trans_result)) {
           data.trans_result.forEach(item => {
@@ -1203,8 +1206,10 @@ export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang
           });
           resolve(transSourceObj);
         } else {
+          result.message = message;
           throw new Error(data.error_code);
         }
+        // console.log('transSourceObj', transSourceObj);
       } catch(e) {
         // // 记录用户行为数据
         // reporter?.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
@@ -1217,11 +1222,13 @@ export async function getTransSourceObjByBaidu(localLangObj: Object, defaultLang
   };
   const taskList = langs.map(lang => () => task(lang));
   try {
+    // 目前同一个文件多种翻译语言，只要有一个翻译出错，就返回null报错
     await limitedParallelRequests(taskList, 1);
-    return transSourceObj;
+    result.transSourceObj = transSourceObj;
+    return result;
   } catch(e) {
     console.log('limitedParallelRequests', e);
-    return null;
+    return result;
   }
 }
 

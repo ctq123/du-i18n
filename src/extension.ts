@@ -26,10 +26,11 @@ import {
 	limitedParallelRequests,
 } from './utils';
 import { DEYI } from './utils/deyi';
+import { MessageType, showMessage } from './utils/message';
 const fs = require('fs');
 const path = require('path');
 const isEmpty = require('lodash/isEmpty');
-import * as packageJson from "../package.json";
+// import * as packageJson from "../package.json";
 
 import { ViewLoader } from './view/ViewLoader';
 
@@ -378,9 +379,9 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-内部",
 						// });
 					} else {// 调用百度翻译
-						if (this.getIsOnlineTrans() === false) {
+						if (deyi.getIsOnlineTrans() === false) {
 							if (!deyi.getBaiduAppid() || !deyi.getBaiduSecrectKey()) {
-								vscode.window.showWarningMessage(`请先配置百度翻译key，地址详情https://fanyi-api.baidu.com/doc/21`);
+								vscode.window.showWarningMessage(`isOnlineTrans设置为false后，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
 								return;
 							}
 						}
@@ -399,14 +400,15 @@ export async function activate(context: vscode.ExtensionContext) {
 								if (!data) {return;}
 								const localLangObj = eval(`(${data})`);
 								// 调用百度翻译
-								const transSourceObj = await getTransSourceObjByBaidu(localLangObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
+								const { transSourceObj, message } = await getTransSourceObjByBaidu(localLangObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
 								// console.log('transSourceObj', transSourceObj);
 								if (!isEmpty(transSourceObj)) {
 									handleTranslate(transSourceObj, fileName);
+								} else {
+									showMessage(message, MessageType.WARNING);
 								}
 							} else {
-								vscode.window.showWarningMessage(`请到目录${tempPaths}的翻译文件中调用该命令`);
-								
+								showMessage(`单个文件调用在线翻译，请到目录${tempPaths}的翻译文件中调用该命令`, MessageType.WARNING);
 								// // 记录用户行为数据
 								// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
 								// 	action: "在线翻译-外部",
@@ -462,7 +464,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						const baiduAppid = deyi.getBaiduAppid();
 						const baiduSecrectKey = deyi.getBaiduSecrectKey();
 						if (!baiduAppid || !baiduSecrectKey) {
-							vscode.window.showWarningMessage(`批量翻译，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
+							showMessage(`批量翻译，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`, MessageType.WARNING);
 							return;
 						}
 
@@ -475,12 +477,12 @@ export async function activate(context: vscode.ExtensionContext) {
 							const task = async () => {
 									// 调用百度翻译
 									try {
-										const transSourceObj = await getTransSourceObjByBaidu(transObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
+										const { transSourceObj, message } = await getTransSourceObjByBaidu(transObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
 										if (!isEmpty(transSourceObj)) {
 											handleTranslate(transSourceObj, fileName);
-											return { code: 200, transSourceObj };
+											return { code: 200, transSourceObj, message };
 										} else {
-											return { code: 500, message: '翻译失败' };
+											return { code: 500, message };
 										}
 									} catch(e) {
 										console.error('e', e);
@@ -492,13 +494,31 @@ export async function activate(context: vscode.ExtensionContext) {
 						
 						limitedParallelRequests(requestList, 1).then((result) => {
 							console.log('result', result);
-							if (Array.isArray(result) && result.every(item => item.code === 200)) {
-								vscode.window.showInformationMessage(`翻译完成，请检查文件`);
+							if (Array.isArray(result)) {
+								const allSuccess = result.every(item => item.code === 200);
+								const allFail = result.every(item => item.code === 500);
+								if (allSuccess) {
+									showMessage(`翻译完成，请检查文件`);
+								} else if (allFail) {
+									if (result[0].message) {
+										showMessage(result[0].message, MessageType.WARNING);
+									}
+									showMessage(`翻译失败，请稍后重试`);
+								} else {
+									if (result[0].message) {
+										showMessage(result[0].message, MessageType.WARNING);
+									}
+									showMessage(`部分翻译完成，请检查文件`);
+								}
 							}
+						}).catch((e) => {
+							console.error('e', e);
+							showMessage(`翻译出错，请稍后重试`);
 						});
 					}
 				} catch(e) {
 					console.error('e', e);
+					showMessage(`翻译出错，请稍后重试`);
 				}
 			})
 		);
