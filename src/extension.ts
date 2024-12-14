@@ -19,7 +19,8 @@ import {
 	translateLocalFile,
 	writeIntoTempFile,
 	getBaseFilePath,
-	generateLangFile,
+	generateSplitLangFile,
+	generateMergeLangFile,
 	getTransSourceObjByBaidu,
 	isIncludePath,
 	getProjectInfo,
@@ -941,9 +942,30 @@ export async function activate(context: vscode.ExtensionContext) {
 			})
 		);
 
+		// 监听命令-合并语言文件
+		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
+			'extension.du.i18n.mergeLangFile', 
+			async function () {
+				const activeEditor = vscode.window.activeTextEditor;
+				if (activeEditor) {
+					const { fileName } = activeEditor.document || {};
+						// 更新本地语言
+					await deyi.readLocalGlobalLangObj();
+					// 合并语言包
+					const localLangObj = deyi.getLocalLangObj();
+					const tempPaths = deyi.getTempPaths();
+					const langFileName = 'lang.json';
+					if (!tempPaths) {return;}
+					generateMergeLangFile(tempPaths, fileName, langFileName, localLangObj, () => {
+						showMessage(`合并成功`, MessageType.INFO);
+					});
+				}
+			})
+		);
+
 		// 监听命令-拆分语言文件
 		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-			'extension.du.i18n.generateLangFile', 
+			'extension.du.i18n.splitLangFile', 
 			async function () {
 				const activeEditor = vscode.window.activeTextEditor;
 				if (activeEditor) {
@@ -954,8 +976,8 @@ export async function activate(context: vscode.ExtensionContext) {
 					const localLangObj = deyi.getLocalLangObj();
 					const langPaths = deyi.getLangPaths();
 					if (!langPaths) {return;}
-					generateLangFile(langPaths, fileName, localLangObj, () => {
-						vscode.window.showInformationMessage(`拆分成功`);
+					generateSplitLangFile(langPaths, fileName, localLangObj, () => {
+						showMessage(`拆分成功`, MessageType.INFO);
 
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_generateLangFile", {

@@ -4,7 +4,7 @@
 	"description": "vscode国际化多语言解决方案",
 	"author": "程天庆",
 	"publisher": "DewuTeam",
-	"version": "1.3.27",
+	"version": "1.3.28",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -109,7 +109,11 @@
 				"title": "刷新数据"
 			},
 			{
-				"command": "extension.du.i18n.generateLangFile",
+				"command": "extension.du.i18n.mergeLangFile",
+				"title": "合并语言文件"
+			},
+			{
+				"command": "extension.du.i18n.splitLangFile",
 				"title": "拆分语言文件"
 			},
 			{
@@ -171,8 +175,12 @@
 					"group": "4_search@20"
 				},
 				{
-					"command": "extension.du.i18n.generateLangFile",
+					"command": "extension.du.i18n.mergeLangFile",
 					"group": "5_cutcopypaste@21"
+				},
+				{
+					"command": "extension.du.i18n.splitLangFile",
+					"group": "5_cutcopypaste@25"
 				},
 				{
 					"command": "extension.du.i18n.updateLocalLangPackage",

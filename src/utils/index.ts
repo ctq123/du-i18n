@@ -556,8 +556,29 @@ export async function writeIntoTempFile(tempPaths: string, filePath: string, new
   }
 };
 
+// 合并语言文件
+export async function generateMergeLangFile(langPaths: string, filePath: string, langFileName: string, localLangObj: any, cb: Function) {
+  try {
+    let newPath = await getBaseFilePath(filePath, langPaths);
+    newPath = newPath.replace(/\*/g, '');
+    if (!fs.existsSync(newPath)) {
+      mkdirs(newPath);
+    }
+    console.log('newPath', newPath);
+    console.log('localLangObj', localLangObj);
+    if (!isEmpty(localLangObj)) {
+      const newFilePath = path.join(newPath, langFileName);
+      const content = JSON.stringify(localLangObj, null, '\t');
+      writeFileToLine(newFilePath, content);
+    }
+    cb(newPath);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // 拆分语言文件
-export async function generateLangFile(langPaths: string, filePath: string, localLangObj: any, cb: Function) {
+export async function generateSplitLangFile(langPaths: string, filePath: string, localLangObj: any, cb: Function) {
   try {
     let newPath = await getBaseFilePath(filePath, langPaths);
     newPath = newPath.replace(/\*/g, '');
