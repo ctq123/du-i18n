@@ -11,7 +11,6 @@ import {
 	getRegExp,
 	getStringValue,
 	handleScanAndInit,
-	handleMultiTranslateFromChineseKey,
 	handleReadStream,
 	handleAnalystics,
 	ananlysisLocalGlobal,
@@ -212,11 +211,13 @@ export async function activate(context: vscode.ExtensionContext) {
 						const isNeedRandSuffix = deyi.getIsNeedRandSuffix();
 						const isSingleQuote = deyi.getIsSingleQuote();
 						const keyBoundaryChars = deyi.getKeyBoundaryChars();
+						const vueReg = deyi.getVueReg();
+						console.log("vueReg", vueReg);
 						const handleRefresh = async () => {
 							await deyi.refreshGlobalLangObj();
 							renderDecoration(deyi);
 						};
-						handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, (newLangObj) => {
+						handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, vueReg, (newLangObj) => {
 							if (!isEmpty(newLangObj)) {
 								writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
 									if (deyi.isOnline()) {
@@ -296,8 +297,9 @@ export async function activate(context: vscode.ExtensionContext) {
 							const tempFileName = deyi.getTempFileName();
 							const isNeedRandSuffix = deyi.getIsNeedRandSuffix();
 							const keyBoundaryChars = deyi.getKeyBoundaryChars();
+							const vueReg = deyi.getVueReg();
 							
-							handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, (newLangObj) => {
+							handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, vueReg, (newLangObj) => {
 								if (!isEmpty(newLangObj)) {
 									writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
 										if (deyi.isOnline()) {
@@ -365,6 +367,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-成功",
 						// });
 					};
+
 					if (deyi.isOnline()) {
 						const transSourceObj = deyi.getTransSourceObj();
 						// console.log('transSourceObj', transSourceObj);
@@ -585,6 +588,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			async function (event) {
 				console.log("registerCommand callback extension.du.i18n.receive", event);
 				if (event) {
+					const vueReg = deyi.getVueReg();
 					switch(event.type) {
 						case 'READY':// 渲染完成，可以传递参数
 							const { defaultKey, language={}, type } = langObj || {};
@@ -607,7 +611,7 @@ export async function activate(context: vscode.ExtensionContext) {
 								const fsPath = langFilePath[data.lang] || filePath;
 								if (fsPath && data.text) {
 									if (type === 'yaml') {
-										if (writeYmlFileSync(fsPath, data.lang, data.text)) {
+										if (writeYmlFileSync(fsPath, data.lang, data.text, vueReg)) {
 											return ViewLoader.postMessageToWebview({
 												type: 'TRANSLATE-SHOWMSG',
 												payload: true,

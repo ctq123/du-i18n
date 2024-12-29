@@ -44,7 +44,7 @@ export class DEYI {
   private baiduSecrectKey: string;
   private fileReg: RegExp;
   private jsonReg: RegExp;
-  private vueAndReactReg: RegExp;
+  private vueReg: RegExp;
 
   constructor(props: any = {}) {
     this.configFilePath = `/du-i18n.config.json`;// du-i18n配置文件
@@ -80,12 +80,13 @@ export class DEYI {
     this.baiduAppid = '';// 百度翻译appid
     this.baiduSecrectKey = '';// 百度翻译密钥
 
-    this.fileReg = /\.(ts|js|tsx|jsx|vue|html)$/;
-    this.jsonReg = /\.(json)$/;
-    this.vueAndReactReg = /\.(vue|tsx|jsx)$/;
+    this.fileReg = /\.(ts|js|tsx|jsx|vue|html|mpx)$/; // 识别的文件
+    this.jsonReg = /\.(json)$/; // json文件
+    this.vueReg = /\.(vue)$/; // vue文件
   }
   async readConfig() {
     const files = await getFiles('**' + this.configFilePath);
+    // TODO: 暂时只支持一个配置文件，多个会冲突，需要优化
     files.forEach(({ fsPath }) => {
       const fileName = path.basename(fsPath);
       if (/\.(json)$/.test(fileName)) {
@@ -100,7 +101,7 @@ export class DEYI {
               transSourcePaths, tempPaths, tempFileName, isOverWriteLocal, uncheckMissKeys,
               fileReg, isNeedRandSuffix, langPaths, isSingleQuote,
               isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
-              vueAndReactReg, keyJoinStr, keyBoundaryChars,
+              vueReg, keyJoinStr, keyBoundaryChars,
             } = config || {};
             this.projectName = projectName || this.projectName;
             this.projectShortName = projectShortName || this.projectShortName;
@@ -128,7 +129,7 @@ export class DEYI {
             this.keyJoinStr = typeof keyJoinStr === 'string' ? keyJoinStr : this.keyJoinStr;
 
             this.fileReg = fileReg || this.fileReg;
-            this.vueAndReactReg = vueAndReactReg || this.vueAndReactReg;
+            this.vueReg = vueReg ? new RegExp(vueReg.slice(1, -1)) : this.vueReg;
           }
         } catch (e) {
           console.error(e);
@@ -300,6 +301,10 @@ export class DEYI {
 
   getBaiduSecrectKey() {
     return this.baiduSecrectKey;
+  }
+
+  getVueReg() {
+    return this.vueReg;
   }
 
   getCurLangObj(userKey) {

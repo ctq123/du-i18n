@@ -4,7 +4,7 @@
 	"description": "vscode国际化多语言解决方案",
 	"author": "程天庆",
 	"publisher": "DewuTeam",
-	"version": "1.3.28",
+	"version": "1.3.29",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -128,7 +128,7 @@
 		"menus": {
 			"editor/context": [
 				{
-					"when": "resourceExtname =~ /\\.(ts|js|tsx|jsx|vue|html|json|yaml|yml)$/",
+					"when": "resourceExtname =~ /\\.(ts|js|tsx|jsx|vue|mpx|html|json|yaml|yml)$/",
 					"submenu": "submenu/command",
 					"group": "navigation"
 				}

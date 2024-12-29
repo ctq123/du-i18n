@@ -151,12 +151,12 @@ export function writeJsonFileSync(filePath: string, text: string) {
 }
 
 // 同步写入yml文件
-export function writeYmlFileSync(filePath: string, key: string, text: string) {
+export function writeYmlFileSync(filePath: string, key: string, text: string, vueReg: RegExp) {
   try {
     const data = fs.readFileSync(filePath, 'utf-8');
     if (data && key) {
       // 公司内部自定义的格式
-      if (/\.(vue)$/.test(filePath) && data.indexOf('</i18n>') > -1) {
+      if (vueReg.test(filePath) && data.indexOf('</i18n>') > -1) {
         const startIndex = data.indexOf('<i18n>') + 6;
         const endIndex = data.indexOf('</i18n>', startIndex);
         const yamlStr = data.substring(startIndex, endIndex);
@@ -626,10 +626,10 @@ export function getGenerateNewLangObj(keys: any[], defaultLang: string, initLang
  * @param data 
  * @param filePath 
  */
-export function handleScanAndInit(filePath: string, initLang: string[], quoteKeys: string[], defaultLang: string, prefixKey: string, isSingleQuote: boolean, keyBoundaryChars: string[], cb: Function) {
+export function handleScanAndInit(filePath: string, initLang: string[], quoteKeys: string[], defaultLang: string, prefixKey: string, isSingleQuote: boolean, keyBoundaryChars: string[], vueReg: RegExp, cb: Function) {
   try {
     // 判断当前文档是否包含i18n的引用
-    if (/\.(vue)$/.test(filePath)) {
+    if (vueReg.test(filePath)) {
       handleReadStream(filePath, (data) => {
         if (data) {
           // 获取所有汉字文案
@@ -1095,37 +1095,6 @@ function getVueNewContent(data: string, chars: any[], initLang: string[], quoteK
   return newData;
 }
 
-
-/**
- * 批量处理-中文转译
- * @param selectFolderPath 目标文件路径
- * @param sourceData 翻译数据
- * @param translateLangs 翻译语言
- */
- export async function handleMultiTranslateFromChineseKey(selectFolderPath: any, sourceData: any, translateLangs: string[]) {
-  try {
-    if (!selectFolderPath) {return;}
-    const folderPaths = selectFolderPath.replace(/\//g, path.sep).split(path.sep);
-    // console.log("folderPaths", folderPaths);
-    const len = folderPaths.length;
-    if (len) {
-      let folderUrl = folderPaths[len - 1];
-      if (folderPaths.includes('src')) {
-        folderUrl = folderPaths.slice(folderPaths.indexOf('src')).join(path.sep);
-      }
-      folderUrl = '**' + path.sep + folderUrl + path.sep + '**';;
-      // console.log("folderUrl", folderUrl);
-      const files = await getFiles(folderUrl);
-      // console.log("files", files);
-      files.forEach(({ fsPath }) => {
-        translateFromChineseKey(fsPath, sourceData, translateLangs);
-      });
-    }
-  } catch(e) {
-    console.error("handleMultiTranslateFromChineseKey e", e);
-  }
-}
-
 // 获取字符串的字节数
 export function getBitCount(str: string) {
   let count = 0;
@@ -1307,122 +1276,6 @@ export async function translateLocalFile(transSourceObj: any, defaultLang: strin
         tranLocalFile(fsPath);
       });
     }
-  }
-}
-
-
-/**
- * 处理-中文转译
- * @param filePath 目标文件路径
- * @param sourceData 翻译数据
- * @param translateLangs 翻译语言
- */
-export async function translateFromChineseKey(filePath: string, sourceData: any, translateLangs: string[]) {
-  // 根据中文key，生成对应的日文
-  // 文件路径
-  try {
-    console.log("translateFromChineseKey", filePath);
-    // 只处理vue文件
-    if (/\.(vue)$/.test(filePath)) {
-      handleReadStream(filePath, (data) => {
-        // 判断是否存在了i18n，否则忽略
-        if (data && data.indexOf('</i18n>') > -1) {
-          const startIndex = data.indexOf('<i18n>') + '<i18n>'.length;
-          const endIndex = data.indexOf('</i18n>', startIndex);
-          const yamlStr = data.substring(startIndex, endIndex);
-          // console.log("yamlStr", yamlStr);
-          const yamlObj = YAML.parse(yamlStr);
-          if (!yamlObj['zh']) {
-            return;
-          };
-          (translateLangs || []).forEach(lang => {
-            if (!yamlObj[lang]) {
-              yamlObj[lang] = {};
-            };
-          });
-          Object.entries(yamlObj['zh']).forEach(([k, v]: any) => {
-            (translateLangs || []).forEach(lang => {
-              const value = (sourceData || {})[lang][v];
-              yamlObj[lang][k] = value || '';
-            });
-          });
-          const newText = '\n' + YAML.stringify(yamlObj);
-          const newStr= data.slice(0, startIndex) + newText + data.slice(endIndex);
-          handleWriteStream(filePath, newStr, () => {});
-        } else {
-          console.log('文件不包含i18n内容，忽略处理');
-        }
-      });
-    } else if (/\.(js|ts)$/.test(filePath)) {
-      const getLangObj = (fPath, callback) => {
-        handleReadStream(fPath, (data) => {
-          if (data) {
-            const startIndex = data.indexOf('{');
-            const endIndex = data.lastIndexOf('}');
-            if (startIndex < 0 || endIndex < 0) {
-              return;
-            }
-            const dataStr = data.substring(startIndex, endIndex + 1);
-            // console.log("dataStr", dataStr);
-            const langObj = eval(`(${dataStr})`);
-            callback(langObj);
-          }
-        });
-      };
-      // 源文件 TODO：硬编码应该读取配置
-      const sourcePath = '**/i18n/locale/**';
-      const files = await getFiles(sourcePath);
-      console.log("files", files);
-      if (!files || !files.length) {return;}
-      // TODO：硬编码应该读取配置
-      const zhFile: any = files.find(f => (/zh\.(js|ts)$/.test(f.fsPath)));
-      if (zhFile) {
-        getLangObj(zhFile.fsPath, (zhLangObj) => {
-          if (zhLangObj) {
-            files.forEach(({ fsPath }) => {
-              const fileName = path.basename(fsPath);
-              const lang = fileName.split('.')[0];
-              if (lang !== 'zh') {
-                getLangObj(fsPath, (langObj) => {
-                  if (isEmpty(langObj)) {// 说明是新增的语言
-                    const newText = Object.entries(zhLangObj).reduce((pre: any, cur: any) => {
-                      const [k, v] = cur;
-                      pre += (`\t'${k}': '',\n`);
-                      return pre;
-                    }, '');
-                    const newContent = `export default {\n` + newText + '}';
-                    handleWriteStream(fsPath, newContent, () => {});
-                  } else if (langObj && Object.values(langObj).some(v => !v)) {// 存在空值
-                    if (!sourceData || isEmpty(sourceData[lang])) {return;}
-                    const newText = Object.entries(langObj).reduce((pre: any, cur: any) => {
-                      const [k, v] = cur;
-                      let val = v;
-                      if (!v) {
-                        const zhVal = zhLangObj[k];
-                        const value = (sourceData || {})[lang][zhVal];
-                        val = value || '';
-                      }
-                      if (val && val.includes("'")) {
-                        pre += (`\t'${k}': "${val}",\n`);
-                      } else {
-                        pre += (`\t'${k}': '${val}',\n`);
-                      }
-                      return pre;
-                    }, '');
-                    const newContent = `export default {\n` + newText + '}';
-                    handleWriteStream(fsPath, newContent, () => {});
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    }
-    return false;
-  } catch(e) {
-    console.error("translateFromChineseKey e", e);
-    return false;
   }
 }
 
