@@ -103,11 +103,11 @@ export class DEYI {
               isOnlineTrans, baiduAppid, baiduSecrectKey, prefixKey,
               vueReg, keyJoinStr, keyBoundaryChars,
             } = config || {};
-            this.projectName = projectName || this.projectName;
-            this.projectShortName = projectShortName || this.projectShortName;
-            this.onlineApiUrl = onlineApiUrl || this.onlineApiUrl;
-            this.version = version || this.version;
-            this.multiFolders = multiFolders || this.multiFolders;
+            this.projectName = projectName;
+            this.projectShortName = projectShortName;
+            this.onlineApiUrl = onlineApiUrl;
+            this.version = version;
+            this.multiFolders = multiFolders;
             this.bigFileLineCount = bigFileLineCount || this.bigFileLineCount;
             this.pullLangs = Array.isArray(pullLangs) ? pullLangs : this.pullLangs;
             this.tempLangs = Array.isArray(tempLangs) && tempLangs.length ? tempLangs : this.tempLangs;
@@ -116,19 +116,19 @@ export class DEYI {
             this.keyBoundaryChars = Array.isArray(keyBoundaryChars) && keyBoundaryChars.length ? keyBoundaryChars : this.keyBoundaryChars;
             this.transSourcePaths = transSourcePaths || this.transSourcePaths;
             this.tempPaths = tempPaths || this.tempPaths;
-            this.tempFileName = tempFileName || this.tempFileName;
-            this.isOverWriteLocal = !!isOverWriteLocal || this.isOverWriteLocal;
-            this.uncheckMissKeys = Array.isArray(uncheckMissKeys) && uncheckMissKeys.length ? uncheckMissKeys : this.uncheckMissKeys;
+            this.tempFileName = tempFileName;
+            this.isOverWriteLocal = !!isOverWriteLocal;
+            this.uncheckMissKeys = Array.isArray(uncheckMissKeys) && uncheckMissKeys.length ? uncheckMissKeys : [];
             this.isNeedRandSuffix = typeof isNeedRandSuffix === 'boolean' ? isNeedRandSuffix : this.isNeedRandSuffix;
             this.langPaths = langPaths || this.langPaths;
             this.isSingleQuote = typeof isSingleQuote === 'boolean' ? isSingleQuote : this.isSingleQuote;
             this.isOnlineTrans = typeof isOnlineTrans === 'boolean' ? isOnlineTrans : this.isOnlineTrans;
-            this.baiduAppid = baiduAppid || this.baiduAppid;
-            this.baiduSecrectKey = baiduSecrectKey || this.baiduSecrectKey;
-            this.prefixKey = typeof prefixKey === 'string' ? prefixKey : this.prefixKey;
-            this.keyJoinStr = typeof keyJoinStr === 'string' ? keyJoinStr : this.keyJoinStr;
+            this.baiduAppid = baiduAppid;
+            this.baiduSecrectKey = baiduSecrectKey;
+            this.prefixKey = typeof prefixKey === 'string' ? prefixKey : null;
+            this.keyJoinStr = typeof keyJoinStr === 'string' ? keyJoinStr : null;
 
-            this.fileReg = fileReg || this.fileReg;
+            // this.fileReg = fileReg || this.fileReg;
             this.vueReg = vueReg ? new RegExp(vueReg.slice(1, -1)) : this.vueReg;
           }
         } catch (e) {
