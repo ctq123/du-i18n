@@ -1,16 +1,11 @@
 import * as vscode from 'vscode';
-import {
-  isIncludePath,
-  getFiles,
-  getBaseFilePath,
-  writeContentToLocalFile,
-} from './index';
-import * as API from './api';
+import { API } from './api';
+import { FileIO } from './fileIO';
 const fs = require('fs');
 const path = require('path');
 const isEmpty = require('lodash/isEmpty');
 
-export class DEYI {
+export class Config {
   private configFilePath: string;
   private projectName: string;
   private projectShortName: string;
@@ -85,7 +80,7 @@ export class DEYI {
     this.vueReg = /\.(vue)$/; // vue文件
   }
   async readConfig() {
-    const files = await getFiles('**' + this.configFilePath);
+    const files = await FileIO.getFiles('**' + this.configFilePath);
     // TODO: 暂时只支持一个配置文件，多个会冲突，需要优化
     files.forEach(({ fsPath }) => {
       const fileName = path.basename(fsPath);
@@ -307,7 +302,7 @@ export class DEYI {
     return this.vueReg;
   }
 
-  getCurLangObj(userKey) {
+  getCurLangObj(userKey: string = '') {
     const lang = userKey || this.getDefaultLang();
     const langObj = this.isOnline() ? this.onlineLangObj : this.localLangObj;
     return langObj[lang];
@@ -316,7 +311,7 @@ export class DEYI {
   async readLocalGlobalLangObj() {
     try {
       if (this.tempPaths) {
-        const files = await getFiles(this.tempPaths);
+        const files = await FileIO.getFiles(this.tempPaths);
         files.forEach(({ fsPath }) => {
           const fileName = path.basename(fsPath);
           if (/\.(json)$/.test(fileName)) {
@@ -344,7 +339,7 @@ export class DEYI {
         });
       }
       if (this.langPaths) {
-        const langFiles = await getFiles(this.langPaths);
+        const langFiles = await FileIO.getFiles(this.langPaths);
         langFiles.forEach(({ fsPath }) => {
           const fileName = path.basename(fsPath);
           if (/\.(json)$/.test(fileName)) {
@@ -386,13 +381,13 @@ export class DEYI {
   async openSetting(fileName: string, cb: Function) {
     const initConfigObj = this.getInitConfig();
     const configFilePath = this.getConfigFilePath();
-    const configPath = await getBaseFilePath(fileName, configFilePath);
+    const configPath = await FileIO.getBaseFilePath(fileName, configFilePath);
     // console.log('configPath', configPath);
     fs.access(configPath, async function (err) {
       // console.log('err', err);
       let isInit = false;
       if (err) {// 不存在
-        await writeContentToLocalFile(fileName, configFilePath, initConfigObj);
+        await FileIO.writeContentToLocalFile(fileName, configFilePath, initConfigObj);
         isInit = true;
       }
       vscode.workspace.openTextDocument(configPath).then((doc) => {
@@ -430,7 +425,7 @@ export class DEYI {
   async setTransSourceObj(cb: Function, isCheck: boolean = true) {
     let sourceData = {};
     // 源文件 
-    const files = await getFiles(this.transSourcePaths);
+    const files = await FileIO.getFiles(this.transSourcePaths);
     let inValidType = false;
     // console.log("files", files);
     files.forEach(({ fsPath }) => {
@@ -486,7 +481,7 @@ export class DEYI {
   async handleMissingDetection(type: string = 'fileName') {
     let result = null;
     try {
-      const files = await getFiles(this.tempPaths);
+      const files = await FileIO.getFiles(this.tempPaths);
       if (files.length) {
         result = {};
         const defaultKeyObj = {};
@@ -553,7 +548,7 @@ export class DEYI {
    */
   generatePageEnName(filePath: string) {
     try {
-      if (isIncludePath(filePath, 'src/components/')) {
+      if (FileIO.isIncludePath(filePath, 'src/components/')) {
         return 'src-components';
       } else {
         let dirName = path.dirname(filePath);
@@ -638,7 +633,7 @@ export class DEYI {
   // 同步单个本地temp文件的文案到deyi平台
   async handleSyncTempFileToOnline(fsPath: string, cb: Function) {
     const pathName = (this.tempPaths || '').replace(/\*/g, '');
-    if (pathName && fsPath && isIncludePath(fsPath, pathName) && this.isOnline()) {
+    if (pathName && fsPath && FileIO.isIncludePath(fsPath, pathName) && this.isOnline()) {
       const fileName = path.basename(fsPath);
       // 命名规范
       let pageEnName = fileName.split('_')[0];
@@ -664,7 +659,7 @@ export class DEYI {
   // 批量同步本地temp文件的文案到deyi平台
   async handleSyncAllTempFileToOnline(cb: Function) {
     if (this.tempPaths && this.isOnline()) {
-      const files = await getFiles(this.tempPaths);// 读取临时文件
+      const files = await FileIO.getFiles(this.tempPaths);// 读取临时文件
       if (!files.length) {
         return vscode.window.showWarningMessage(`文件目录${this.tempPaths}下缺少需要同步的文案`);
       }

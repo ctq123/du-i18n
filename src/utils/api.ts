@@ -1,6 +1,7 @@
 const fetch = require('node-fetch').default;
+const debounce = require('lodash/debounce');
 
-export const GET = async (url: any, params: any = {}) => {
+const GET = async (url: any, params: any = {}) => {
   const apiUrl = Object.entries(params).filter(Boolean).reduce((pre, cur, i) => {
     let p = i === 0 ? '?' : '&';
     p += `${cur[0]}=${cur[1]}`;
@@ -9,7 +10,7 @@ export const GET = async (url: any, params: any = {}) => {
   return fetch(apiUrl).then((res: any) => res.json());
 };
 
-export const POST = async (url: any, params: any = {}, headers: any = {}) => {
+const POST = async (url: any, params: any = {}, headers: any = {}) => {
   return fetch(url, {
     method: 'post',
     body: JSON.stringify(params),
@@ -17,8 +18,38 @@ export const POST = async (url: any, params: any = {}, headers: any = {}) => {
   }).then((res: any) => res.json());
 };
 
+// 限流
+const delayTime = 100;
+const debouncedGet = debounce(GET, delayTime, {
+  leading: true,
+  trailing: false,
+});
+const debouncedPost = debounce(POST, delayTime, {
+  leading: true,
+  trailing: false,
+});
 
-export default {
-  GET,
-  POST,
-};
+
+export class API {
+  /**
+   * GET请求
+   * @param url
+   * @param params
+   * @returns
+   */
+  static async GET(url: string, params: any, headers: any = {}) {
+    console.log('GET', url, params);
+    return debouncedGet(url, params, headers);
+  }
+
+  /**
+   * POST请求
+   * @param url
+   * @param params
+   * @returns
+   */
+  static async POST(url: string, params: any, headers: any = {}) {
+    console.log('POST', url, params);
+    return debouncedPost(url, params, headers);
+  }
+}

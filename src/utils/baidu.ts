@@ -1,7 +1,5 @@
-import { message } from 'antd';
-import * as API from './api';
+import { API } from './api';
 // import * as vscode from 'vscode';
-import { MessageType, showMessage } from './message';
 const md5 = require('md5');
 
 const url: string = 'http://api.fanyi.baidu.com/api/trans/vip/translate';
@@ -19,26 +17,39 @@ const getSign = (q: string = '', baiduAppid: string = '', baiduSecrectKey: strin
   return md5(str);
 }
 
-export const getTranslate = async (params: any = {}) => {
-  const { baiduAppid, baiduSecrectKey } = params;
-  const newParams = {
-    from: 'zh',
-    to: 'en',
-    salt,
-    appid: baiduAppid || appid,
-    ...params,
-    sign: getSign(params.q, baiduAppid, baiduSecrectKey),
-  };
-  newParams.q = encodeURIComponent(newParams.q);
-  const data = await API.GET(url, newParams);
-  const result = { data, message: '', success: true };
-  if (data && data.error_code) {
-    result.success = false;
-    if (Number(data.error_code) === 54004 && (!baiduAppid || !baiduSecrectKey)) {
-      result.message = '每月5w翻译数量限制的公共额度已用完，可开通百度翻译账号，并在du-i18n.config.json文件中设置自己的baiduAppid和baiduSecrectKey进行翻译';
-    } else {
-      result.message = `百度翻译异常code：${data.error_code}，详情https://fanyi-api.baidu.com/doc/21`;
-    }
-  }
-  return result;
+const sleep = (time: number) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true);
+    }, time);
+  });
 };
+export class Baidu {
+  /**
+   * 百度翻译
+   */
+  static getTranslate = async (params: any = {}) => {
+    const { baiduAppid, baiduSecrectKey } = params;
+    const newParams = {
+      from: 'zh',
+      to: 'en',
+      salt,
+      appid: baiduAppid || appid,
+      ...params,
+      sign: getSign(params.q, baiduAppid, baiduSecrectKey),
+    };
+    newParams.q = encodeURIComponent(newParams.q);
+    const data = await API.GET(url, newParams);
+    const result = { data, message: '', success: true };
+    if (data && data.error_code) {
+      result.success = false;
+      if (Number(data.error_code) === 54004 && (!baiduAppid || !baiduSecrectKey)) {
+        result.message = '每月5w翻译数量限制的公共额度已用完，可开通百度翻译账号，并在du-i18n.config.json文件中设置自己的baiduAppid和baiduSecrectKey进行翻译';
+      } else {
+        result.message = `百度翻译异常code：${data.error_code}，详情https://fanyi-api.baidu.com/doc/21`;
+      }
+    }
+    return result;
+  };
+}
+

@@ -3,7 +3,7 @@
 		"module": "commonjs",
 		"target": "ES5",
 		"outDir": "dist",
-		"lib": ["dom", "ES2015"],
+		"lib": ["dom", "ES2021"],
 		"sourceMap": true,
 		"rootDir": ".",
 		"jsx": "react",

@@ -1,32 +1,10 @@
 import * as vscode from 'vscode';
 // import TelemetryReporter from "vscode-extension-telemetry";
-import { 
-	getObjectValue, 
-	writeJsonFileSync, 
-	handleScanFileInner, 
-	writeYmlFileSync,
-	getFiles,
-	showDecoration,
-	openConfigCommand,
-	getRegExp,
-	getStringValue,
-	handleScanAndInit,
-	handleReadStream,
-	handleAnalystics,
-	ananlysisLocalGlobal,
-	writeContentToLocalFile,
-	translateLocalFile,
-	writeIntoTempFile,
-	getBaseFilePath,
-	generateSplitLangFile,
-	generateMergeLangFile,
-	getTransSourceObjByBaidu,
-	isIncludePath,
-	getProjectInfo,
-	limitedParallelRequests,
-} from './utils';
-import { DEYI } from './utils/deyi';
-import { MessageType, showMessage } from './utils/message';
+import { Utils } from './utils';
+import { VSCodeUI } from './utils/vscode-ui';
+import { FileIO } from './utils/fileIO';
+import { Config } from './utils/config';
+import { MessageType, Message } from './utils/message';
 const fs = require('fs');
 const path = require('path');
 const isEmpty = require('lodash/isEmpty');
@@ -43,93 +21,15 @@ interface LangType {
 };
 
 let langObj: LangType = null;
-let userKey: string = '';
-let timeout: any = null;
-
-/**
- * 判断当前文档是否包含i18n的引用
- * @param str 
- * @param keys 
- * @returns 
- */
-function checkText(str: string, keys: string) {
-	const list = keys.replace(/\s/g, '').replace(',', '(,').split(',');
-	return list.some(t => t !== '(' && str.indexOf(t) > -1);
-}
-
-function getI18NKey(keyStr: string) {
-	let res = keyStr;
-	res = res.split(',')[0];
-	res = res.replace(/[\t\n'"]/g, '');
-	return res;
-}
-
-function getKeyPosition(text: any, keys: string) {
-	const positionObj: any = {};// key: 左括号位置+右括号位置，value: i18n的字符串
-	if (keys && text) {
-		keys.split(',').forEach((k) => {
-			const key = (k || '').trim() + '(';
-			let index = -1, startIndex = 0;
-			while((index = text.indexOf(key, startIndex)) > -1) {
-				const leftCol = index + key.length;// 左括号位置
-				const rightCol = text.indexOf(')', leftCol);// 右括号位置
-				if (rightCol > -1) {
-					const value = getI18NKey(text.substring(leftCol, rightCol));
-					// key: 左括号位置+右括号位置，value: i18n的字符串
-					positionObj[`${leftCol}-${rightCol+1}`] = value;
-					startIndex = leftCol;
-				} else {
-					break;
-				}
-			}
-		});
-	}
-	return positionObj;
-}
-
-/**
- * 渲染文档，添加标签
- * @param includeKeys 
- */
-function renderDecoration(deyi: DEYI) {
-	const activeEditor = vscode.window.activeTextEditor;
-	// console.log("lang", lang)
-	const langObj = deyi.getCurLangObj(userKey);
-	if (activeEditor && !isEmpty(langObj)) {
-		// console.log('langObj', langObj);
-		const { fileName, getText } = activeEditor.document || {};
-		const contentText = getText ? getText() : '';
-		const quoteKeysStr = deyi.getQuoteKeysStr();
-		const fileReg = deyi.getFileReg();
-		// 判断当前文档是否包含i18n的引用
-		if (quoteKeysStr && fileReg.test(fileName) && checkText(contentText, quoteKeysStr)) {
-			const positionObj = getKeyPosition(contentText, quoteKeysStr);
-			// console.log("positionObj", positionObj);
-			triggerUpdateDecorations(activeEditor, positionObj, langObj);
-		}
-	}
-}
-
-function triggerUpdateDecorations(activeEditor, positionObj, langObj) {
-  if (timeout) {
-    clearTimeout(timeout);
-  }
-  timeout = setTimeout(() => showDecoration(activeEditor, positionObj, langObj), 300);
-}
 
 export async function activate(context: vscode.ExtensionContext) {
 	try {
-		const deyi = new DEYI();
-		// console.log("deyi", deyi);
-
-		const proInfo = getProjectInfo();
-		const projectInfo = JSON.stringify(proInfo);
-
+		const config = new Config();
 		// 初始化
-		deyi.init(context, () => {
+		config.init(context, () => {
 			// 渲染语言
-			renderDecoration(deyi);
-			console.log("deyi init complete");
+			VSCodeUI.renderDecoration(config);
+			console.log("config init complete");
 			// try {
 			// 	// 记录用户行为数据，只会读取package.json文件信息中的（项目名称、版本、项目描述），其余内容不会读取
 			// 	reporter.sendTelemetryEvent("du_i18n_deyi_init", {
@@ -145,26 +45,26 @@ export async function activate(context: vscode.ExtensionContext) {
 				let activeEditor = vscode.window.activeTextEditor;
 				if (activeEditor && activeEditor.document === document) {
 					const fileName = activeEditor.document.fileName;	
-					const fileReg = deyi.getFileReg();
-					const jsonReg = deyi.getJsonReg();			
+					const fileReg = config.getFileReg();
+					const jsonReg = config.getJsonReg();			
 					if (jsonReg.test(fileName)) {// 需要扩展
-						let transSourcePaths = deyi.getTransSourcePaths();
+						let transSourcePaths = config.getTransSourcePaths();
 						transSourcePaths = transSourcePaths.replace(/\*/g, '');
 						// console.log('transSourcePaths', fileName, transSourcePaths);
-						if (isIncludePath(fileName, transSourcePaths)) {
+						if (FileIO.isIncludePath(fileName, transSourcePaths)) {
 							// console.log('setTransSourceObj');
 							// 更新翻译源
-							await deyi.setTransSourceObj(() => {}, false);
+							await config.setTransSourceObj(() => {}, false);
 						}
-						const configFilePath = deyi.getConfigFilePath();
-						if (isIncludePath(fileName, configFilePath)) {
-							deyi.init(context, () => {});
-							console.log("deyi2", deyi);
+						const configFilePath = config.getConfigFilePath();
+						if (FileIO.isIncludePath(fileName, configFilePath)) {
+							config.init(context, () => {});
+							console.log("deyi2", config);
 						}
 					}
 					if (fileReg.test(fileName)) {
 						// 渲染语言
-						renderDecoration(deyi);
+						VSCodeUI.renderDecoration(config);
 					}
 				}
 			},
@@ -179,7 +79,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				// 扫描内部特殊引用方式
 				// await scanInnerFile();
 				// 渲染语言
-				renderDecoration(deyi);
+				VSCodeUI.renderDecoration(config);
 				// discard: 对接多语言平台api已废弃，先去掉耗性能
 				// // 多语言平台
 				// onlineOnDidChangeActiveTextEditor();
@@ -201,27 +101,27 @@ export async function activate(context: vscode.ExtensionContext) {
 					const activeEditor = vscode.window.activeTextEditor;
 					if (activeEditor) {
 						const { fileName } = activeEditor.document || {};
-						const initLang = deyi.getTranslateLangs();
-						const keys = deyi.getQuoteKeys();
-						const defaultLang = deyi.getDefaultLang();
-						const prefixKey = deyi.getPrefixKey(fileName);
-						const tempPaths = deyi.getTempPaths();
-						const pageEnName = deyi.generatePageEnName(fileName);
-						const tempFileName = deyi.getTempFileName();
-						const isNeedRandSuffix = deyi.getIsNeedRandSuffix();
-						const isSingleQuote = deyi.getIsSingleQuote();
-						const keyBoundaryChars = deyi.getKeyBoundaryChars();
-						const vueReg = deyi.getVueReg();
+						const initLang = config.getTranslateLangs();
+						const keys = config.getQuoteKeys();
+						const defaultLang = config.getDefaultLang();
+						const prefixKey = config.getPrefixKey(fileName);
+						const tempPaths = config.getTempPaths();
+						const pageEnName = config.generatePageEnName(fileName);
+						const tempFileName = config.getTempFileName();
+						const isNeedRandSuffix = config.getIsNeedRandSuffix();
+						const isSingleQuote = config.getIsSingleQuote();
+						const keyBoundaryChars = config.getKeyBoundaryChars();
+						const vueReg = config.getVueReg();
 						console.log("vueReg", vueReg);
 						const handleRefresh = async () => {
-							await deyi.refreshGlobalLangObj();
-							renderDecoration(deyi);
+							await config.refreshGlobalLangObj();
+							VSCodeUI.renderDecoration(config);
 						};
-						handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, vueReg, (newLangObj) => {
+						Utils.handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, vueReg, (newLangObj) => {
 							if (!isEmpty(newLangObj)) {
-								writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
-									if (deyi.isOnline()) {
-										deyi.handleSendToOnline(newLangObj, pageEnName, async () => {
+								FileIO.writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
+									if (config.isOnline()) {
+										config.handleSendToOnline(newLangObj, pageEnName, async () => {
 											handleRefresh();
 
 											// // 记录用户行为数据
@@ -254,90 +154,67 @@ export async function activate(context: vscode.ExtensionContext) {
 		);
 
 		// 监听命令-批量扫描中文
-		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
-			'extension.du.i18n.multiScanAndGenerate', 
-			async function () {
-				try {
-					// // 记录用户行为数据
-					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-					// 	action: "批量扫描中文",
-					// 	projectInfo,
-					// });
-					// console.log("vscode 批量扫描中文")
-					const selectFolder = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, });
-					// console.log("selectFolder", selectFolder);
-					if (!selectFolder || !selectFolder[0] || !selectFolder[0].path) {return;}
-					const folderPath = selectFolder[0].path;
-					const initLang = deyi.getTranslateLangs();
-					const keys = deyi.getQuoteKeys();
-					const isSingleQuote = deyi.getIsSingleQuote();
-					const defaultLang = deyi.getDefaultLang();
-					const tempPaths = deyi.getTempPaths();
-					const folderPaths = folderPath.replace(/\//g, path.sep).split(path.sep);
-					// console.log("folderPath", folderPath, path.sep);
-					// console.log("folderPaths", folderPaths);
-					const len = folderPaths.length;
-					if (len) {
-						let folderUrl = folderPaths[len - 1];
-						if (folderPaths.includes('src')) {
-							folderUrl = folderPaths.slice(folderPaths.indexOf('src')).join(path.sep);
-						}
-						folderUrl = '**' + path.sep + folderUrl + path.sep + '**';
-						console.log("folderUrl", folderUrl);
-						const files = await getFiles(folderUrl);
-						console.log("files", files);
-						const handleRefresh = async () => {
-							await deyi.refreshGlobalLangObj();
-							renderDecoration(deyi);
-						};
-						files.forEach((file, i) => {
-							const fileName = file.fsPath;
-							const prefixKey = deyi.getPrefixKey(fileName, i.toString());
-							const pageEnName = deyi.generatePageEnName(fileName);
-							const tempFileName = deyi.getTempFileName();
-							const isNeedRandSuffix = deyi.getIsNeedRandSuffix();
-							const keyBoundaryChars = deyi.getKeyBoundaryChars();
-							const vueReg = deyi.getVueReg();
-							
-							handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, vueReg, (newLangObj) => {
-								if (!isEmpty(newLangObj)) {
-									writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
-										if (deyi.isOnline()) {
-											deyi.handleSendToOnline(newLangObj, pageEnName, async () => {
-												if (i === files.length - 1) {
-													handleRefresh();
+		context.subscriptions.push(
+			vscode.commands.registerTextEditorCommand(
+				'extension.du.i18n.multiScanAndGenerate',
+				async () => {
+					const folderUri = await vscode.window.showOpenDialog({
+						canSelectFiles: false,
+						canSelectFolders: true,
+						canSelectMany: false,
+					});
 
-													// // 记录用户行为数据
-													// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-													// 	action: "批量扫描中文-内部-成功",
-													// });
+					const handleRefresh = async () => {
+						await config.refreshGlobalLangObj();
+						VSCodeUI.renderDecoration(config);
+					};
+		
+					if (folderUri && folderUri.length > 0) {
+						const folderPath = folderUri[0].fsPath;
+						const initLang = config.getTranslateLangs();
+						const keys = config.getQuoteKeys();
+						const isSingleQuote = config.getIsSingleQuote();
+						const defaultLang = config.getDefaultLang();
+						const tempPaths = config.getTempPaths();
+
+						FileIO.getFolderFiles(folderPath)
+							.then(async (files: any[]) => {
+								console.log('files', files);
+								files.forEach((file: any, i: number) => {
+									console.log('file', file);
+								  const fileName = file;
+									const prefixKey = config.getPrefixKey(fileName, i.toString());
+									const pageEnName = config.generatePageEnName(fileName);
+									const tempFileName = config.getTempFileName();
+									const isNeedRandSuffix = config.getIsNeedRandSuffix();
+									const keyBoundaryChars = config.getKeyBoundaryChars();
+									const vueReg = config.getVueReg();
+									
+									Utils.handleScanAndInit(fileName, initLang, keys, defaultLang, prefixKey, isSingleQuote, keyBoundaryChars, vueReg, (newLangObj) => {
+										if (!isEmpty(newLangObj)) {
+											FileIO.writeIntoTempFile(tempPaths, fileName, newLangObj, pageEnName, tempFileName, isNeedRandSuffix, async () => {
+												if (config.isOnline()) {
+													config.handleSendToOnline(newLangObj, pageEnName, async () => {
+														if (i === files.length - 1) {
+															handleRefresh();
+														}
+													});
+												} else {
+													if (i === files.length - 1) {// TODO: 这里其实用promise.all更好，但改造多层回调成本太大，暂且这样
+														handleRefresh();
+													}
 												}
 											});
-										} else {
-											if (i === files.length - 1) {// TODO: 这里其实用promise.all更好，但改造多层回调成本太大，暂且这样
-												handleRefresh();
-
-												// // 记录用户行为数据
-												// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-												// 	action: "批量扫描中文-外部-成功",
-												// });
-											}
 										}
 									});
-								}
+								});
+							})
+							.catch((e) => {
+								console.error('getFolderFiles e', e);
 							});
-						});
 					}
-				} catch(e) {
-					console.error("multiScanAndGenerate e", e);
-					// // 记录用户行为数据
-					// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
-					// 	action: "批量扫描中文-异常",
-					// 	projectInfo,
-					// 	error: e
-					// });
 				}
-			})
+			)
 		);
 
 		// 监听命令-在线翻译
@@ -352,15 +229,15 @@ export async function activate(context: vscode.ExtensionContext) {
 					// });
 
 					// console.log("vscode 中文转译")
-					const langKey = userKey || deyi.getDefaultLang();
-					const tempPaths = deyi.getTempPaths();
-					const isOverWriteLocal = deyi.getIsOverWriteLocal();
+					const langKey = VSCodeUI.userKey || config.getDefaultLang();
+					const tempPaths = config.getTempPaths();
+					const isOverWriteLocal = config.getIsOverWriteLocal();
 
 					const handleTranslate = async (sourObj: any = {}, filePath: string = '') => {
 						// console.log("transSourceObj", transSourceObj);
-						await translateLocalFile(sourObj, langKey, tempPaths, filePath, isOverWriteLocal);
-						if (!deyi.isOnline()) {
-							await deyi.refreshGlobalLangObj();
+						await Utils.translateLocalFile(sourObj, langKey, tempPaths, filePath, isOverWriteLocal);
+						if (!config.isOnline()) {
+							await config.refreshGlobalLangObj();
 						}
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
@@ -368,11 +245,11 @@ export async function activate(context: vscode.ExtensionContext) {
 						// });
 					};
 
-					if (deyi.isOnline()) {
-						const transSourceObj = deyi.getTransSourceObj();
+					if (config.isOnline()) {
+						const transSourceObj = config.getTransSourceObj();
 						// console.log('transSourceObj', transSourceObj);
 						if (isEmpty(transSourceObj)) {
-							await deyi.setTransSourceObj((data) => {
+							await config.setTransSourceObj((data) => {
 								handleTranslate(data);
 							});
 						} else {
@@ -383,8 +260,8 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-内部",
 						// });
 					} else {// 调用百度翻译
-						if (deyi.getIsOnlineTrans() === false) {
-							if (!deyi.getBaiduAppid() || !deyi.getBaiduSecrectKey()) {
+						if (config.getIsOnlineTrans() === false) {
+							if (!config.getBaiduAppid() || !config.getBaiduSecrectKey()) {
 								vscode.window.showWarningMessage(`isOnlineTrans设置为false后，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`);
 								return;
 							}
@@ -393,26 +270,26 @@ export async function activate(context: vscode.ExtensionContext) {
 						const activeEditor = vscode.window.activeTextEditor;
 						if (activeEditor) {
 							const { fileName } = activeEditor.document || {};
-							const tempPaths = deyi.getTempPaths();
+							const tempPaths = config.getTempPaths();
 							const tempPathName = tempPaths.replace(/\*/g, '');
 							// console.log('fileName', fileName, tempPathName);
-							if (fileName && isIncludePath(fileName, tempPathName) && /\.(json)$/.test(fileName)) {
-								const baiduAppid = deyi.getBaiduAppid();
-								const baiduSecrectKey = deyi.getBaiduSecrectKey();
+							if (fileName && FileIO.isIncludePath(fileName, tempPathName) && /\.(json)$/.test(fileName)) {
+								const baiduAppid = config.getBaiduAppid();
+								const baiduSecrectKey = config.getBaiduSecrectKey();
 								if (!/\.(json)$/.test(fileName)) {return;}
 								const data = fs.readFileSync(fileName, 'utf-8');
 								if (!data) {return;}
 								const localLangObj = eval(`(${data})`);
 								// 调用百度翻译
-								const { transSourceObj, message } = await getTransSourceObjByBaidu(localLangObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
+								const { transSourceObj, message } = await Utils.getTransSourceObjByBaidu(localLangObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
 								// console.log('transSourceObj', transSourceObj);
 								if (!isEmpty(transSourceObj)) {
 									handleTranslate(transSourceObj, fileName);
 								} else {
-									showMessage(message, MessageType.WARNING);
+									Message.showMessage(message, MessageType.WARNING);
 								}
 							} else {
-								showMessage(`单个文件调用在线翻译，请到目录${tempPaths}的翻译文件中调用该命令`, MessageType.WARNING);
+								Message.showMessage(`单个文件调用在线翻译，请到目录${tempPaths}的翻译文件中调用该命令`, MessageType.WARNING);
 								// // 记录用户行为数据
 								// reporter.sendTelemetryEvent("extension_du_i18n_multiScanAndGenerate", {
 								// 	action: "在线翻译-外部",
@@ -439,22 +316,22 @@ export async function activate(context: vscode.ExtensionContext) {
 			async function () {
 				try {
 					// console.log("vscode 中文转译")
-					const langKey = userKey || deyi.getDefaultLang();
-					const tempPaths = deyi.getTempPaths();
-					const isOverWriteLocal = deyi.getIsOverWriteLocal();
+					const langKey = VSCodeUI.userKey || config.getDefaultLang();
+					const tempPaths = config.getTempPaths();
+					const isOverWriteLocal = config.getIsOverWriteLocal();
 
 					const handleTranslate = async (sourObj: any = {}, filePath: string = '') => {
 						// console.log("transSourceObj", transSourceObj);
-						await translateLocalFile(sourObj, langKey, tempPaths, filePath, isOverWriteLocal);
-						if (!deyi.isOnline()) {
-							await deyi.refreshGlobalLangObj();
+						await Utils.translateLocalFile(sourObj, langKey, tempPaths, filePath, isOverWriteLocal);
+						if (!config.isOnline()) {
+							await config.refreshGlobalLangObj();
 						}
 					};
-					if (deyi.isOnline()) {
-						const transSourceObj = deyi.getTransSourceObj();
+					if (config.isOnline()) {
+						const transSourceObj = config.getTransSourceObj();
 						// console.log('transSourceObj', transSourceObj);
 						if (isEmpty(transSourceObj)) {
-							await deyi.setTransSourceObj((data) => {
+							await config.setTransSourceObj((data) => {
 								handleTranslate(data);
 							});
 						} else {
@@ -465,15 +342,15 @@ export async function activate(context: vscode.ExtensionContext) {
 						// 	action: "在线翻译-内部",
 						// });
 					} else {// 批量调用百度翻译
-						const baiduAppid = deyi.getBaiduAppid();
-						const baiduSecrectKey = deyi.getBaiduSecrectKey();
+						const baiduAppid = config.getBaiduAppid();
+						const baiduSecrectKey = config.getBaiduSecrectKey();
 						if (!baiduAppid || !baiduSecrectKey) {
-							showMessage(`批量翻译，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`, MessageType.WARNING);
+							Message.showMessage(`批量翻译，请开通百度翻译账号，并在du-i18n.config.json文件中设置自己专属的baiduAppid和baiduSecrectKey`, MessageType.WARNING);
 							return;
 						}
 
 						// 返回没有翻译的文件集合
-						const resultObj: any = await deyi.handleMissingDetection('filePath');
+						const resultObj: any = await config.handleMissingDetection('filePath');
 
 						const requestList = Object.entries(resultObj).map(([key, value]) => {
 						  const fileName = key;
@@ -481,7 +358,7 @@ export async function activate(context: vscode.ExtensionContext) {
 							const task = async () => {
 									// 调用百度翻译
 									try {
-										const { transSourceObj, message } = await getTransSourceObjByBaidu(transObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
+										const { transSourceObj, message } = await Utils.getTransSourceObjByBaidu(transObj, langKey, baiduAppid, baiduSecrectKey, isOverWriteLocal);
 										if (!isEmpty(transSourceObj)) {
 											handleTranslate(transSourceObj, fileName);
 											return { code: 200, transSourceObj, message };
@@ -496,33 +373,33 @@ export async function activate(context: vscode.ExtensionContext) {
 							return task;
 						});
 						
-						limitedParallelRequests(requestList, 1).then((result) => {
+						Utils.limitedParallelRequests(requestList, 1).then((result) => {
 							console.log('result', result);
 							if (Array.isArray(result)) {
 								const allSuccess = result.every(item => item.code === 200);
 								const allFail = result.every(item => item.code === 500);
 								if (allSuccess) {
-									showMessage(`翻译完成，请检查文件`);
+									Message.showMessage(`翻译完成，请检查文件`);
 								} else if (allFail) {
 									if (result[0].message) {
-										showMessage(result[0].message, MessageType.WARNING);
+										Message.showMessage(result[0].message, MessageType.WARNING);
 									}
-									showMessage(`翻译失败，请稍后重试`);
+									Message.showMessage(`翻译失败，请稍后重试`);
 								} else {
 									if (result[0].message) {
-										showMessage(result[0].message, MessageType.WARNING);
+										Message.showMessage(result[0].message, MessageType.WARNING);
 									}
-									showMessage(`部分翻译完成，请检查文件`);
+									Message.showMessage(`部分翻译完成，请检查文件`);
 								}
 							}
 						}).catch((e) => {
 							console.error('e', e);
-							showMessage(`翻译出错，请稍后重试`);
+							Message.showMessage(`翻译出错，请稍后重试`);
 						});
 					}
 				} catch(e) {
 					console.error('e', e);
-					showMessage(`翻译出错，请稍后重试`);
+					Message.showMessage(`翻译出错，请稍后重试`);
 				}
 			})
 		);
@@ -535,10 +412,10 @@ export async function activate(context: vscode.ExtensionContext) {
 				const activeEditor = vscode.window.activeTextEditor;
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
-					deyi.openSetting(fileName, (isInit) => {
+					config.openSetting(fileName, (isInit) => {
 						if (isInit) {
-							deyi.init(context, () => {});
-							console.log("deyi2", deyi);
+							config.init(context, () => {});
+							console.log("deyi2", config);
 							// // 记录用户行为数据
 							// reporter.sendTelemetryEvent("du_i18n_deyi_init", {
 							// 	action: "初始化-设置回调",
@@ -560,19 +437,19 @@ export async function activate(context: vscode.ExtensionContext) {
 			'extension.du.i18n.change', 
 			async function () {
 				// 多语言平台
-				const defaultLang = deyi.getDefaultLang();
-				const tempLangs = deyi.getTempLangs();
-				const langKey = userKey || defaultLang;
+				const defaultLang = config.getDefaultLang();
+				const tempLangs = config.getTempLangs();
+				const langKey = VSCodeUI.userKey || defaultLang;
 				if (Array.isArray(tempLangs) && tempLangs.length) {
 					const items = tempLangs.map((k) => ({ label: k, value: k }));
 					const selected = await vscode.window.showQuickPick(items, { placeHolder: langKey });
-					if (selected && selected.value !== userKey) {
-						userKey = selected.value;
-						if (deyi.isOnline()) {
-							await deyi.getOnlineLanguage(userKey);
+					if (selected && selected.value !== VSCodeUI.userKey) {
+						VSCodeUI.userKey = selected.value;
+						if (config.isOnline()) {
+							await config.getOnlineLanguage(VSCodeUI.userKey);
 						}
 						// 重新渲染
-						renderDecoration(deyi);
+						VSCodeUI.renderDecoration(config);
 					}
 				}
 				// // 记录用户行为数据
@@ -588,11 +465,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			async function (event) {
 				console.log("registerCommand callback extension.du.i18n.receive", event);
 				if (event) {
-					const vueReg = deyi.getVueReg();
+					const vueReg = config.getVueReg();
 					switch(event.type) {
 						case 'READY':// 渲染完成，可以传递参数
 							const { defaultKey, language={}, type } = langObj || {};
-							const langKey = userKey || defaultKey;
+							const langKey = VSCodeUI.userKey || defaultKey;
 							const payload = {
 								defaultLang: langKey,
 								langs: Object.keys(language),
@@ -610,20 +487,11 @@ export async function activate(context: vscode.ExtensionContext) {
 								const { langFilePath={}, filePath, type } = langObj || {};
 								const fsPath = langFilePath[data.lang] || filePath;
 								if (fsPath && data.text) {
-									if (type === 'yaml') {
-										if (writeYmlFileSync(fsPath, data.lang, data.text, vueReg)) {
-											return ViewLoader.postMessageToWebview({
-												type: 'TRANSLATE-SHOWMSG',
-												payload: true,
-											});
-										}
-									} else {
-										if (writeJsonFileSync(fsPath, data.text)) {
-											return ViewLoader.postMessageToWebview({
-												type: 'TRANSLATE-SHOWMSG',
-												payload: true,
-											});
-										}
+									if (FileIO.writeJsonFileSync(fsPath, data.text)) {
+										return ViewLoader.postMessageToWebview({
+											type: 'TRANSLATE-SHOWMSG',
+											payload: true,
+										});
 									}
 								}
 							}
@@ -658,9 +526,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
 			'extension.du.i18n.updateLocalLangPackage', 
 			async function () {
-				await deyi.refreshGlobalLangObj(true);
+				await config.refreshGlobalLangObj(true);
 				// 重新渲染
-				renderDecoration(deyi);
+				VSCodeUI.renderDecoration(config);
 				vscode.window.showInformationMessage(`翻译数据刷新成功`);
 
 				// // 记录用户行为数据
@@ -676,7 +544,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				const selectFolder = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, });
 				// console.log("selectFolder", selectFolder);
 				if (!selectFolder || !selectFolder[0] || !selectFolder[0].path) {return;}
-				const result: any = await handleAnalystics(selectFolder[0].path, deyi.getBigFileLineCount());
+				const result: any = await Utils.handleAnalystics(selectFolder[0].path, config.getBigFileLineCount());
 				console.log("result", result);
 				const panel = vscode.window.createWebviewPanel(
 					'analyticsResult',
@@ -724,9 +592,9 @@ export async function activate(context: vscode.ExtensionContext) {
 				const activeEditor = vscode.window.activeTextEditor;
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
-					if (deyi.isOnline()) {
-						deyi.handleSyncTempFileToOnline(fileName, () => {
-							deyi.getOnlineLanguage();
+					if (config.isOnline()) {
+						config.handleSyncTempFileToOnline(fileName, () => {
+							config.getOnlineLanguage();
 							vscode.window.showInformationMessage(`当前文件上传成功`);
 							// // 记录用户行为数据
 							// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
@@ -742,7 +610,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						const activeEditor = vscode.window.activeTextEditor;
 						if (activeEditor) {
 							const { fileName } = activeEditor.document || {};
-							deyi.openSetting(fileName, () => {});
+							config.openSetting(fileName, () => {});
 						}
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalToOnline", {
@@ -757,9 +625,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(vscode.commands.registerTextEditorCommand(
 			'extension.du.i18n.batchUpdateLocalToOnline', 
 			async function () {
-				if (deyi.isOnline()) {
-					deyi.handleSyncAllTempFileToOnline(() => {
-						deyi.getOnlineLanguage();
+				if (config.isOnline()) {
+					config.handleSyncAllTempFileToOnline(() => {
+						config.getOnlineLanguage();
 						vscode.window.showInformationMessage(`同步成功`);
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
@@ -775,7 +643,7 @@ export async function activate(context: vscode.ExtensionContext) {
 					const activeEditor = vscode.window.activeTextEditor;
 					if (activeEditor) {
 						const { fileName } = activeEditor.document || {};
-						deyi.openSetting(fileName, () => {});
+						config.openSetting(fileName, () => {});
 					}
 					// // 记录用户行为数据
 					// reporter.sendTelemetryEvent("extension_du_i18n_batchUpdateOnline", {
@@ -785,7 +653,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				// const selectFolder = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, });
 				// // console.log("selectFolder", selectFolder);
 				// if (!selectFolder || !selectFolder[0] || !selectFolder[0].path) {return;}
-				// await deyi.handleBatchAdd(selectFolder[0].path);
+				// await config.handleBatchAdd(selectFolder[0].path);
 				// handleRefresh();
 			})
 		);
@@ -797,19 +665,19 @@ export async function activate(context: vscode.ExtensionContext) {
 				const activeEditor = vscode.window.activeTextEditor;
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
-					if (deyi.isOnline()) {
+					if (config.isOnline()) {
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
 						// 	action: "拉取远程文案-内部",
 						// });
 
-						if (!deyi.checkProjectConfig()) {
+						if (!config.checkProjectConfig()) {
 							return null;
 						}
-						await deyi.getOnlineLanguage();
-						const onlineLangObj = deyi.getOnlineLangObj();
-						const localFilePath = deyi.getLocalLangFilePath();
-						const filePath: any = await writeContentToLocalFile(fileName, localFilePath, onlineLangObj);
+						await config.getOnlineLanguage();
+						const onlineLangObj = config.getOnlineLangObj();
+						const localFilePath = config.getLocalLangFilePath();
+						const filePath: any = await FileIO.writeContentToLocalFile(fileName, localFilePath, onlineLangObj);
 						// 设置HTML内容
 						if (filePath) {
 							vscode.workspace.openTextDocument(filePath).then((doc) => {
@@ -823,7 +691,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						}
 					} else {
 						vscode.window.showWarningMessage(`请完善线上化相关配置`);
-						deyi.openSetting(fileName, () => {});
+						config.openSetting(fileName, () => {});
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_updateLocalFromOnline", {
 						// 	action: "拉取远程文案-外部",
@@ -840,8 +708,8 @@ export async function activate(context: vscode.ExtensionContext) {
 				const activeEditor = vscode.window.activeTextEditor;
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
-					const missCheckResultPath = deyi.getMissCheckResultPath();
-					const result: any = await deyi.handleMissingDetection();
+					const missCheckResultPath = config.getMissCheckResultPath();
+					const result: any = await config.handleMissingDetection();
 					console.log("result", result);
 					let str = `翻译漏检-结果：\n`;
 					if ((!isEmpty(result))) {
@@ -856,7 +724,7 @@ export async function activate(context: vscode.ExtensionContext) {
 					} else {
 						str += `无翻译数据`;
 					}
-					const filePath: any = await writeContentToLocalFile(fileName, missCheckResultPath, str);
+					const filePath: any = await FileIO.writeContentToLocalFile(fileName, missCheckResultPath, str);
 					if (filePath) {
 						vscode.workspace.openTextDocument(filePath).then((doc) => {
 							vscode.window.showTextDocument(doc);
@@ -883,25 +751,25 @@ export async function activate(context: vscode.ExtensionContext) {
 					const activeEditor = vscode.window.activeTextEditor;
 					if (activeEditor) {
 						const { fileName } = activeEditor.document || {};
-						if (deyi.isOnline()) {
-							if (!deyi.checkProjectConfig()) {
+						if (config.isOnline()) {
+							if (!config.checkProjectConfig()) {
 								return null;
 							}
-							await deyi.getOnlineLanguage();
+							await config.getOnlineLanguage();
 							// 多语言平台
-							const defaultLang = deyi.getDefaultLang();
-							const tempLangs = deyi.getTempLangs();
-							const langKey = userKey || defaultLang;
+							const defaultLang = config.getDefaultLang();
+							const tempLangs = config.getTempLangs();
+							const langKey = VSCodeUI.userKey || defaultLang;
 							if (Array.isArray(tempLangs) && tempLangs.length) {
 								const items = tempLangs.filter((k) => k && k !== langKey).map((k) => ({ label: k, value: k }));
 								const selected = await vscode.window.showQuickPick(items, { placeHolder: '请选择目标语言' });
 								if (selected) {
-									const untransLangObj = await deyi.searchUntranslateText(langKey, selected.value);
+									const untransLangObj = await config.searchUntranslateText(langKey, selected.value);
 									if (isEmpty(untransLangObj)) {
 										throw new Error('数据异常');
 									}
-									const localFilePath = deyi.getLanguageMissOnlinePath();
-									const filePath: any = await writeContentToLocalFile(fileName, localFilePath, untransLangObj);
+									const localFilePath = config.getLanguageMissOnlinePath();
+									const filePath: any = await FileIO.writeContentToLocalFile(fileName, localFilePath, untransLangObj);
 									// 设置HTML内容
 									if (filePath) {
 										vscode.workspace.openTextDocument(filePath).then((doc) => {
@@ -921,7 +789,7 @@ export async function activate(context: vscode.ExtensionContext) {
 							// });
 						} else {
 							vscode.window.showWarningMessage(`请完善线上化相关配置`);
-							deyi.openSetting(fileName, () => {});
+							config.openSetting(fileName, () => {});
 							// // 记录用户行为数据
 							// reporter.sendTelemetryEvent("extension_du_i18n_searchUntranslateText", {
 							// 	action: "远程漏检文案-外部",
@@ -954,14 +822,14 @@ export async function activate(context: vscode.ExtensionContext) {
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
 						// 更新本地语言
-					await deyi.readLocalGlobalLangObj();
+					await config.readLocalGlobalLangObj();
 					// 合并语言包
-					const localLangObj = deyi.getLocalLangObj();
-					const tempPaths = deyi.getTempPaths();
+					const localLangObj = config.getLocalLangObj();
+					const tempPaths = config.getTempPaths();
 					const langFileName = 'lang.json';
 					if (!tempPaths) {return;}
-					generateMergeLangFile(tempPaths, fileName, langFileName, localLangObj, () => {
-						showMessage(`合并成功`, MessageType.INFO);
+					FileIO.generateMergeLangFile(tempPaths, fileName, langFileName, localLangObj, () => {
+						Message.showMessage(`合并成功`, MessageType.INFO);
 					});
 				}
 			})
@@ -975,13 +843,13 @@ export async function activate(context: vscode.ExtensionContext) {
 				if (activeEditor) {
 					const { fileName } = activeEditor.document || {};
 						// 更新本地语言
-					await deyi.readLocalGlobalLangObj();
+					await config.readLocalGlobalLangObj();
 					// 拆分语言包
-					const localLangObj = deyi.getLocalLangObj();
-					const langPaths = deyi.getLangPaths();
+					const localLangObj = config.getLocalLangObj();
+					const langPaths = config.getLangPaths();
 					if (!langPaths) {return;}
-					generateSplitLangFile(langPaths, fileName, localLangObj, () => {
-						showMessage(`拆分成功`, MessageType.INFO);
+					FileIO.generateSplitLangFile(langPaths, fileName, localLangObj, () => {
+						Message.showMessage(`拆分成功`, MessageType.INFO);
 
 						// // 记录用户行为数据
 						// reporter.sendTelemetryEvent("extension_du_i18n_generateLangFile", {
